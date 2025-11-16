@@ -1,0 +1,8 @@
+[package]
+name = "laft"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nusb = "0.2.1"
+argh = "0.1.13"
