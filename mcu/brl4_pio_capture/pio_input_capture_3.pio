@@ -1,0 +1,51 @@
+;
+; 
+.program capture
+; In which we try to use the PIO as a timer
+; then blast the captured times to the IN FIFO
+
+	; gpio 3 rising edge occurance will be time
+	; stamped and transfered to FIFO
+	; This program just counts while waiting for the edge,
+	; loads a time into a FIFO,
+	; Then counts and waits for a falling edge and loops
+	; -- exactly 5 insructions betwen each decrement!
+	; x decrements ; y is pin memory
+
+.wrap_target
+; if the proram wraps to here, then 2^32 counts have ticked
+	set x 0x00		; init x timer 0x00000000 
+	mov x ~x		; NOT the bits into x 0xffffffff
+top:
+	jmp pin pin1 	; is the pin high
+	set y 0			; if not, clear the pin memory
+	jmp count_dec [1]	; jump to decrement, but delay 1 PIO cycle
+pin1:
+	jmp !y hit		; if pin is high and y is low, then hit rising edge
+	jmp count_dec [1]	; otherwise jump to decrement, but delay 1
+hit:
+	set y 1			; record new pin high
+	in x 32			; send the counter to isr 
+    //push noblock	; FIFO autopush set up in the C below	
+count_dec:
+	jmp x-- top		; 5 cycles to loop
+.wrap             ; 
+
+% c-sdk {
+// this is a raw helper function for use by the user which sets up the GPIO output, 
+//   and configures the SM to output on a particular pin
+
+void capture_program_init(PIO pio, uint sm, uint offset) {
+   // the jump pin
+   pio_gpio_init(pio, 3); 
+   //
+   pio_sm_config c = capture_program_get_default_config(offset);  
+   // JMP pin is specified separately as GPIO #, GPIO 3
+   sm_config_set_jmp_pin (&c, 3) ;
+   // no output FIFO from core0, all input to core0
+   sm_config_set_fifo_join (&c, PIO_FIFO_JOIN_RX) ;
+   // autopush the isr to eliminate one istrcution
+   sm_config_set_in_shift (&c, true, true, 1) ; 
+   pio_sm_init(pio, sm, offset, &c);
+}
+%}
