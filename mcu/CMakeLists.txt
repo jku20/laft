@@ -1,34 +1,36 @@
-set(PICO_BOARD pico CACHE STRING "Board type")
-if(WIN32)
-    set(USERHOME $ENV{USERPROFILE})
-else()
-    set(USERHOME $ENV{HOME})
-endif()
-set(sdkVersion 2.2.0)
-set(toolchainVersion 14_2_Rel1)
-set(picotoolVersion 2.2.0)
-set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
-if (EXISTS ${picoVscode})
-    include(${picoVscode})
-endif()
 # cmake version
 cmake_minimum_required(VERSION 3.13)
 
-# include the sdk.cmake file
-include(pico_sdk_import.cmake)
-
-include_directories(tinyusb/src include)
+include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # give the project a name (anything you want)
 project(laft C CXX ASM)
 
-# initialize the sdk
 pico_sdk_init()
 
 add_executable(laft)
+target_sources(laft PRIVATE
+  src/main.c
+  src/usb_descriptors.c
+)
+target_include_directories(laft PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/pico
+  include/
+)
 
-# must match with executable name and source file names
-target_sources(laft PRIVATE src/main.c)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PICO_ENTER_USB_BOOT_ON_EXIT=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PICO_PRINTF_ALWAYS_INCLUDED=1)
+
+target_link_libraries(${PROJECT_NAME}
+  tinyusb_device
+  tinyusb_board
+  pico_multicore
+  pico_stdlib
+)
+
+pico_enable_stdio_usb(${PROJECT_NAME} 0) # Incompatible with using tinyusb manually
+pico_enable_stdio_uart(${PROJECT_NAME} 1)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(laft)
