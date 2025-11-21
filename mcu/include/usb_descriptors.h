@@ -1,32 +1,34 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Ha Thach (tinyusb.org)
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 #ifndef USB_DESCRIPTORS_H_
 #define USB_DESCRIPTORS_H_
 
+#include <stdint.h>
+
 enum { VENDOR_REQUEST_WEBUSB = 1, VENDOR_REQUEST_MICROSOFT = 2 };
 
-extern uint8_t const desc_ms_os_20[];
+extern const uint8_t desc_ms_os_20[];
+
+// These are arbitrarily chosen.
+#define VID 0x8f83
+#define PID 0x2309
+
+#define MAX_ENDPOINT0_SIZE 64
+#define ENDPOINT_BULK_SIZE 64
+
+#define MANUFACTURER "buddy.boards"
+#define PRODUCT "laft"
+#define SERIAL "000"
+
+enum {
+  STRID_LANGID = 0,
+  STRID_MANUFACTURER,
+  STRID_PRODUCT,
+  STRID_SERIAL,
+};
+
+// Interfaces for the USB device descriptor
+enum { ITF_NUM_VENDOR = 0, ITF_NUM_TOTAL };
+
+#define BULK_IN_ENDPOINT_DIR 0x83
+#define BULK_OUT_ENDPOINT_DIR 0x04
 
 #endif /* USB_DESCRIPTORS_H_ */
