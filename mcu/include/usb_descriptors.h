@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-enum { VENDOR_REQUEST_WEBUSB = 1, VENDOR_REQUEST_MICROSOFT = 2 };
+enum { VENDOR_REQUEST_MICROSOFT = 1 };
 
 extern const uint8_t desc_ms_os_20[];
 
@@ -28,7 +28,7 @@ enum {
 // Interfaces for the USB device descriptor
 enum { ITF_NUM_VENDOR = 0, ITF_NUM_TOTAL };
 
-#define BULK_IN_ENDPOINT_DIR 0x83
+#define BULK_IN_ENDPOINT_DIR 0x85
 #define BULK_OUT_ENDPOINT_DIR 0x04
 
 #endif /* USB_DESCRIPTORS_H_ */
