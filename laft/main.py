@@ -74,8 +74,8 @@ def main():
         ep_out.write(req)
         resp = []
         for i in range(0, (63 + args.size * NUM_TRACES // 8) // 64):
-            print("reading")
-            print(ep_in.read(64))
+            resp += list(ep_in.read(64))
+        print(resp[: args.size * 2])
     except usb.core.USBError as e:
         eprint(f"error: {e}")
         sys.exit(1)
