@@ -38,13 +38,19 @@ void ep0_in_handler(uint8_t *buf, uint16_t len);
 void ep0_out_handler(uint8_t *buf, uint16_t len);
 void ep1_out_handler(uint8_t *buf, uint16_t len);
 void ep2_in_handler(uint8_t *buf, uint16_t len);
+void respond_to_trace_request();
 
 #define TRACES 16
 #define MAX_BITS 1000
 
 // Request queue
 static request_queue req_queue;
-static uint8_t data[TRACES * MAX_BITS];
+static uint8_t data0[TRACES * MAX_BITS];
+static uint8_t data1[TRACES * MAX_BITS];
+static uint8_t *read_buf = data0;
+static uint8_t *write_buf = data1;
+static uint8_t cmd_buf[8];
+struct usb_endpoint_configuration *cmd_ep;
 
 // Global device address
 static bool should_set_address = false;
@@ -392,8 +398,7 @@ void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
  *
  * @param pkt, the setup packet from the host.
  */
-void usb_set_device_configuration(
-    __unused volatile struct usb_setup_packet *pkt) {
+void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
   // Only one configuration so just acknowledge the request
   printf("Device Enumerated\r\n");
   usb_acknowledge_out_request();
@@ -558,7 +563,7 @@ void isr_usbctrl(void) {
  * @param buf the data that was sent
  * @param len the length that was sent
  */
-void ep0_in_handler(__unused uint8_t *buf, __unused uint16_t len) {
+void ep0_in_handler(uint8_t *buf, uint16_t len) {
   if (should_set_address) {
     // Set actual device address in hardware
     usb_hw->dev_addr_ctrl = dev_addr;
@@ -571,35 +576,35 @@ void ep0_in_handler(__unused uint8_t *buf, __unused uint16_t len) {
   }
 }
 
-void ep0_out_handler(__unused uint8_t *buf, __unused uint16_t len) {}
+void ep0_out_handler(uint8_t *buf, uint16_t len) {}
 
 // Device specific functions
 void ep1_out_handler(uint8_t *buf, uint16_t len) {
-  static uint8_t out_buf[64];
-
   printf("RX %d bytes from host\n", len);
   // Send data back to host
   struct usb_endpoint_configuration *ep =
       usb_get_endpoint_configuration(EP2_IN_ADDR);
 
-  int bits = (buf[1] << 8) + buf[2];
-  int bytes = bits * TRACES / 8;
-  int cnt = 0;
-  for (int i = 0; i < bytes; i++) {
-    if (cnt == 64) {
-      cnt = 0;
-      push_queue(&req_queue, ep, out_buf, 64);
-    }
-    out_buf[cnt++] = data[i];
+  for (int i = 0; i < 8; i++) {
+    cmd_buf[i] = buf[i];
   }
-  if (cnt != 0) {
-    push_queue(&req_queue, ep, out_buf, 64);
+  cmd_ep = ep;
+
+  switch (buf[0]) {
+  case 1:
+    respond_to_trace_request();
+    break;
+  default:
+    break;
   }
-  request *r = pop_front_queue(&req_queue);
-  usb_start_transfer(r->ep, r->buf, r->len);
+
+  if (!is_empty_queue(&req_queue)) {
+    request *r = pop_front_queue(&req_queue);
+    usb_start_transfer(r->ep, r->buf, r->len);
+  }
 }
 
-void ep2_in_handler(__unused uint8_t *buf, uint16_t len) {
+void ep2_in_handler(uint8_t *buf, uint16_t len) {
   printf("Sent %d bytes to host\n", len);
   // Get ready to rx again from host
   if (!is_empty_queue(&req_queue)) {
@@ -610,13 +615,86 @@ void ep2_in_handler(__unused uint8_t *buf, uint16_t len) {
   }
 }
 
+void dma_irq_0_handler() {
+  static uint8_t out_buf[64];
+
+  // Swap the buffers.
+  uint8_t *tmp = read_buf;
+  read_buf = write_buf;
+  write_buf = tmp;
+
+  int bits = (cmd_buf[1] << 8) + cmd_buf[2];
+  int bytes = bits * TRACES / 8;
+  int cnt = 0;
+  for (int i = 0; i < bytes; i++) {
+    if (cnt == 64) {
+      cnt = 0;
+      push_queue(&req_queue, cmd_ep, out_buf, 64);
+    }
+    out_buf[cnt++] = read_buf[i];
+  }
+  if (cnt != 0) {
+    push_queue(&req_queue, cmd_ep, out_buf, 64);
+  }
+
+  // Start transmitting over USB.
+  if (!is_empty_queue(&req_queue)) {
+    request *r = pop_front_queue(&req_queue);
+    usb_start_transfer(r->ep, r->buf, r->len);
+  }
+}
+
+void pio_dma_init() {
+  uint16_t capture_prog_instr = pio_encode_in(pio_pins, pin_count);
+  struct pio_program capture_prog = {
+      .instructions = &capture_prog_instr, .length = 1, .origin = -1};
+  uint offset = pio_add_program(pio0, &capture_prog);
+  pio_sm_config c = pio_get_default_sm_config();
+  sm_config_set_in_pins(&c, 8);
+  sm_config_set_wrap(&c, offset, offset);
+  sm_config_set_clkdiv(&c, 1.f);
+  sm_config_set_in_shift(&c, true, true, 32);
+  sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+  pio_sm_init(pio, 0, offset, &c);
+
+  irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_0_handler);
+  irq_set_enabled(DMA_IRQ_0, true);
+}
+
+// This sets up a PIO state machine which constantly reads gipos 8-15. It then
+// takes a DMA channel which will
+void pio_dma_arm(uint8_t *out_buf) {
+  pio_sm_set_enabled(pio0, sm, false);
+  // Need to clear _input shift counter_, as well as FIFO, because there may be
+  // partial ISR contents left over from a previous run. sm_restart does this.
+  pio_sm_clear_fifos(pio0, sm);
+  pio_sm_restart(pio0, sm);
+
+  dma_channel_config c = dma_channel_get_default_config(dma_chan);
+  channel_config_set_read_increment(&c, false);
+  channel_config_set_write_increment(&c, true);
+  channel_config_set_dreq(&c, pio_get_dreq(pio0, 0, false));
+
+  dma_channel_configure(dma_chan, &c,
+                        out_buf,                // Destination pointer
+                        &pio0->rxf[sm],         // Source pointer
+                        TRACES * MAX_BITS / 32, // Number of transfers
+                        true                    // Start immediately
+  );
+
+  dma_channel_set_irq0_enabled(dma_chan, true);
+  pio_sm_set_enabled(pio0, sm, true);
+}
+
+void respond_to_trace_request() { pio_dma_arm(write_buf); }
+
 int main(void) {
   stdio_init_all();
   usb_device_init();
   reset_queue(&req_queue);
 
   for (int i = 0; i < TRACES * MAX_BITS; i++) {
-    data[i] = i;
+    read_buf[i] = i;
   }
 
   // Wait until configured
