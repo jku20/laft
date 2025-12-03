@@ -21,6 +21,7 @@
 // For interrupt enable and numbers
 #include "hardware/irq.h"
 // For resetting the USB controller
+#include "hardware/clocks.h"
 #include "hardware/dma.h"
 #include "hardware/pio.h"
 #include "hardware/pwm.h"
@@ -42,9 +43,11 @@ void ep0_out_handler(uint8_t *buf, uint16_t len);
 void ep1_out_handler(uint8_t *buf, uint16_t len);
 void ep2_in_handler(uint8_t *buf, uint16_t len);
 void respond_to_trace_request();
+void respond_to_freq_request();
 
 #define TRACES 16
 #define MAX_BITS 1000
+#define CLK 125000000
 
 // Request queue
 static request_queue req_queue;
@@ -595,9 +598,12 @@ void ep1_out_handler(uint8_t *buf, uint16_t len) {
 
   switch (buf[0]) {
   case 1:
-    printf("responding");
+    printf("responding to trace request\n");
     respond_to_trace_request();
     break;
+  case 2:
+    printf("responding to freq request\n");
+    respond_to_freq_request();
   default:
     break;
   }
@@ -652,7 +658,7 @@ void dma_irq_0_handler() {
 }
 
 void pio_dma_init() {
-  uint16_t capture_prog_instr = pio_encode_in(8, 16);
+  uint16_t capture_prog_instr = pio_encode_in(pio_pins, 16);
   struct pio_program capture_prog = {
       .instructions = &capture_prog_instr, .length = 1, .origin = -1};
   uint offset = pio_add_program(pio0, &capture_prog);
@@ -692,12 +698,22 @@ void pio_dma_arm(uint8_t *out_buf) {
 
   dma_channel_set_irq0_enabled(0, true);
   pio_sm_set_enabled(pio0, 0, true);
-  printf("reading\n");
+
+  printf("armed\n");
 }
 
 void respond_to_trace_request() { pio_dma_arm(write_buf); }
+void respond_to_freq_request() {
+  uint32_t target = ((uint32_t *)cmd_buf)[1];
+  printf("target: %d\n", target);
+  float div = (float)CLK / target;
+  pio_sm_set_clkdiv(pio0, 0, div);
+  push_queue(&req_queue, usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL,
+             64);
+}
 
 int main(void) {
+  set_sys_clock_hz(CLK, true);
   stdio_init_all();
   usb_device_init();
   reset_queue(&req_queue);

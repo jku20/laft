@@ -34,6 +34,54 @@ def trace_request(size: int) -> array:
     return array("B", [0x01, (size & 0xFF00) >> 8, size & 0x00FF] + 5 * [0])
 
 
+def trace_request_tx(size: int, ep_in, ep_out) -> list[list[bool]]:
+    # send request
+    req = trace_request(size)
+    ep_out.write(req)
+
+    # read response packets
+    resp = []
+    for i in range(0, (63 + size * NUM_TRACES // 8) // 64):
+        resp += list(ep_in.read(64))
+
+    out = []
+    # unflatten the flattened list
+    for i in range(size):
+        b1 = i * 2
+        b2 = i * 2 + 1
+
+        bits = []
+        for i in range(8):
+            bits.append(resp[b1] & 1 << i)
+        for i in range(8):
+            bits.append(resp[b2] & 1 << i)
+
+        out.append(bits)
+    return out
+
+
+def freq_request(freq: int) -> array:
+    assert freq < (1 << 32)
+    return array(
+        "B",
+        [
+            0x02,
+            0x00,
+            0x00,
+            0x00,
+            0x000000FF & freq,
+            (0x0000FF00 & freq) >> 8,
+            (0x00FF0000 & freq) >> 16,
+            (0xFF000000 & freq) >> 24,
+        ],
+    )
+
+
+def freq_request_tx(freq: int, ep_in, ep_out):
+    req = freq_request(freq)
+    ep_out.write(req)
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="laft",
@@ -49,9 +97,18 @@ def main():
         required=True,
     )
 
+    parser.add_argument(
+        "-f",
+        "--frequency",
+        type=int,
+        help="the sampling frequency of the logic analyzer",
+        required=False,
+    )
+
     args = parser.parse_args()
 
     try:
+        # Set up a USB Connection.
         dev = connect(VID, PID)
 
         if not dev.get_active_configuration():
@@ -70,12 +127,13 @@ def main():
             == usb.util.ENDPOINT_OUT,
         )
 
-        req = trace_request(args.size)
-        ep_out.write(req)
-        resp = []
-        for i in range(0, (63 + args.size * NUM_TRACES // 8) // 64):
-            resp += list(ep_in.read(64))
-        print(resp[: args.size * 2])
+        # Set the frequency to listen at if it exist, else this will be just the default on the MCU
+        if args.frequency:
+            freq_request_tx(args.frequency, ep_in, ep_out)
+
+        # Request the data from the trigger condition
+        resp = trace_request_tx(args.size, ep_in, ep_out)
+        print(resp)
     except usb.core.USBError as e:
         eprint(f"error: {e}")
         sys.exit(1)
