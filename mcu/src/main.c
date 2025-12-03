@@ -595,6 +595,7 @@ void ep1_out_handler(uint8_t *buf, uint16_t len) {
 
   switch (buf[0]) {
   case 1:
+    printf("responding");
     respond_to_trace_request();
     break;
   default:
@@ -621,6 +622,8 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 void dma_irq_0_handler() {
   static uint8_t out_buf[64];
 
+  dma_hw->ints0 = 1u << 0;
+
   // Swap the buffers.
   uint8_t *tmp = read_buf;
   read_buf = write_buf;
@@ -640,6 +643,7 @@ void dma_irq_0_handler() {
     push_queue(&req_queue, cmd_ep, out_buf, 64);
   }
 
+  printf("IRQ run\n");
   // Start transmitting over USB.
   if (!is_empty_queue(&req_queue)) {
     request *r = pop_front_queue(&req_queue);
@@ -667,6 +671,7 @@ void pio_dma_init() {
 // This sets up a PIO state machine which constantly reads gipos 8-15. It then
 // takes a DMA channel which will
 void pio_dma_arm(uint8_t *out_buf) {
+  printf("arming\n");
   pio_sm_set_enabled(pio0, 0, false);
   // Need to clear _input shift counter_, as well as FIFO, because there may be
   // partial ISR contents left over from a previous run. sm_restart does this.
@@ -687,6 +692,7 @@ void pio_dma_arm(uint8_t *out_buf) {
 
   dma_channel_set_irq0_enabled(0, true);
   pio_sm_set_enabled(pio0, 0, true);
+  printf("reading\n");
 }
 
 void respond_to_trace_request() { pio_dma_arm(write_buf); }
@@ -695,6 +701,7 @@ int main(void) {
   stdio_init_all();
   usb_device_init();
   reset_queue(&req_queue);
+  pio_dma_init();
 
   for (int i = 0; i < TRACES * MAX_BITS; i++) {
     read_buf[i] = i;
@@ -708,14 +715,19 @@ int main(void) {
   // Get ready to rx from host
   usb_start_transfer(usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL, 64);
 
+  printf("configured, usb, starting pwm!\n");
+
+  // Flicker GPIO 27 which is connected to GPIO 8 so we can read a signal.
+  gpio_set_function(27, GPIO_FUNC_PWM);
+  uint slice_num = pwm_gpio_to_slice_num(27);
+  pwm_set_wrap(slice_num, 3);
+  pwm_set_chan_level(slice_num, PWM_CHAN_B, 3);
+  pwm_set_enabled(slice_num, true);
+
+  printf("configured pwm, spinning forever now!");
+
   // Everything is interrupt driven so just loop here
   while (1) {
     tight_loop_contents();
-
-    // Flicker GPIO 27 which is connected to GPIO 8 so we can read a signal.
-    gpio_set_function(27, GPIO_FUNC_PWM);
-    uint slice_num = pwm_gpio_to_slice_num(0);
-    pwm_set_chan_level(slice_num, PWM_CHAN_A, 3);
-    pwm_set_enabled(slice_num, true);
   }
 }
