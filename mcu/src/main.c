@@ -21,6 +21,9 @@
 // For interrupt enable and numbers
 #include "hardware/irq.h"
 // For resetting the USB controller
+#include "hardware/dma.h"
+#include "hardware/pio.h"
+#include "hardware/pwm.h"
 #include "hardware/resets.h"
 
 // Device descriptors
@@ -645,7 +648,7 @@ void dma_irq_0_handler() {
 }
 
 void pio_dma_init() {
-  uint16_t capture_prog_instr = pio_encode_in(pio_pins, pin_count);
+  uint16_t capture_prog_instr = pio_encode_in(8, 16);
   struct pio_program capture_prog = {
       .instructions = &capture_prog_instr, .length = 1, .origin = -1};
   uint offset = pio_add_program(pio0, &capture_prog);
@@ -655,7 +658,7 @@ void pio_dma_init() {
   sm_config_set_clkdiv(&c, 1.f);
   sm_config_set_in_shift(&c, true, true, 32);
   sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
-  pio_sm_init(pio, 0, offset, &c);
+  pio_sm_init(pio0, 0, offset, &c);
 
   irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_0_handler);
   irq_set_enabled(DMA_IRQ_0, true);
@@ -664,26 +667,26 @@ void pio_dma_init() {
 // This sets up a PIO state machine which constantly reads gipos 8-15. It then
 // takes a DMA channel which will
 void pio_dma_arm(uint8_t *out_buf) {
-  pio_sm_set_enabled(pio0, sm, false);
+  pio_sm_set_enabled(pio0, 0, false);
   // Need to clear _input shift counter_, as well as FIFO, because there may be
   // partial ISR contents left over from a previous run. sm_restart does this.
-  pio_sm_clear_fifos(pio0, sm);
-  pio_sm_restart(pio0, sm);
+  pio_sm_clear_fifos(pio0, 0);
+  pio_sm_restart(pio0, 0);
 
-  dma_channel_config c = dma_channel_get_default_config(dma_chan);
+  dma_channel_config c = dma_channel_get_default_config(0);
   channel_config_set_read_increment(&c, false);
   channel_config_set_write_increment(&c, true);
   channel_config_set_dreq(&c, pio_get_dreq(pio0, 0, false));
 
-  dma_channel_configure(dma_chan, &c,
+  dma_channel_configure(0, &c,
                         out_buf,                // Destination pointer
-                        &pio0->rxf[sm],         // Source pointer
+                        &pio0->rxf[0],          // Source pointer
                         TRACES * MAX_BITS / 32, // Number of transfers
                         true                    // Start immediately
   );
 
-  dma_channel_set_irq0_enabled(dma_chan, true);
-  pio_sm_set_enabled(pio0, sm, true);
+  dma_channel_set_irq0_enabled(0, true);
+  pio_sm_set_enabled(pio0, 0, true);
 }
 
 void respond_to_trace_request() { pio_dma_arm(write_buf); }
@@ -708,5 +711,11 @@ int main(void) {
   // Everything is interrupt driven so just loop here
   while (1) {
     tight_loop_contents();
+
+    // Flicker GPIO 27 which is connected to GPIO 8 so we can read a signal.
+    gpio_set_function(27, GPIO_FUNC_PWM);
+    uint slice_num = pwm_gpio_to_slice_num(0);
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, 3);
+    pwm_set_enabled(slice_num, true);
   }
 }

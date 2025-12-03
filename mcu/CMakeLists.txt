@@ -27,6 +27,9 @@ target_link_libraries(${PROJECT_NAME}
   pico_stdlib
   hardware_resets
   hardware_irq
+  hardware_pio
+  hardware_dma
+  hardware_pwm
 )
 
 # create map/bin/hex file etc.
