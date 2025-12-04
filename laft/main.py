@@ -219,6 +219,7 @@ def main():
             dpg.setup_dearpygui()
             dpg.show_viewport()
             dpg.set_primary_window("laft", True)
+
             dataq = queue.Queue()
             cmdq = queue.Queue()
 
