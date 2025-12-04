@@ -3,6 +3,8 @@ from array import array
 import usb.core
 import sys
 
+import dearpygui.dearpygui as dpg
+
 # constants for colored output
 GRAY = "\033[0;30m"
 CYAN = "\033[0;36m"
@@ -34,7 +36,7 @@ def trace_request(size: int) -> array:
     return array("B", [0x01, (size & 0xFF00) >> 8, size & 0x00FF] + 5 * [0])
 
 
-def trace_request_tx(size: int, ep_in, ep_out) -> list[list[bool]]:
+def trace_request_tx(size: int, ep_in, ep_out) -> list[list[int]]:
     # send request
     req = trace_request(size)
     ep_out.write(req)
@@ -94,14 +96,21 @@ def main():
         "--size",
         type=int,
         help="the number of bits to read from each trace",
-        required=True,
+        required=False,
     )
 
     parser.add_argument(
         "-f",
         "--frequency",
         type=int,
-        help="the sampling frequency of the logic analyzer",
+        help="set the sampling frequency of the logic analyzer",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="run send an individual request instead of running as a gui",
         required=False,
     )
 
@@ -127,13 +136,81 @@ def main():
             == usb.util.ENDPOINT_OUT,
         )
 
-        # Set the frequency to listen at if it exist, else this will be just the default on the MCU
-        if args.frequency:
-            freq_request_tx(args.frequency, ep_in, ep_out)
+        if args.headless:
+            # Set the frequency to listen at if it exist, else this will be just the default on the MCU
+            if args.frequency:
+                freq_request_tx(args.frequency, ep_in, ep_out)
 
-        # Request the data from the trigger condition
-        resp = trace_request_tx(args.size, ep_in, ep_out)
-        print(resp)
+            # Request the data from the trigger condition
+            resp = trace_request_tx(args.size, ep_in, ep_out)
+            print(resp)
+        else:
+            dpg.create_context()
+            dpg.create_viewport(title="laft", width=600, height=600)
+
+            SAMPLES = 500
+
+            def update_data():
+                resp = trace_request_tx(SAMPLES, ep_in, ep_out)
+                for i in range(16):
+                    dpg.set_value(f"series_{i}", [[i for i in range(SAMPLES)], resp[i]])
+
+            with dpg.window(tag="laft"):
+                dpg.add_text("Hello, World")
+                for i in range(16):
+                    # plot for a waveform
+                    with dpg.plot(
+                        label=f"Waveform {i}",
+                        height=50,
+                        width=-1,
+                        no_frame=True,
+                        no_title=True,
+                        no_mouse_pos=True,
+                        no_menus=True,
+                    ):
+                        dpg.add_plot_axis(
+                            dpg.mvXAxis,
+                            label="x",
+                            no_label=True,
+                            tag=f"xaxis_{i}",
+                            no_highlight=True,
+                            no_tick_marks=True,
+                            no_tick_labels=True,
+                        )
+                        dpg.add_plot_axis(
+                            dpg.mvYAxis,
+                            tag=f"yaxis_{i}",
+                            no_label=True,
+                            no_highlight=True,
+                            no_tick_labels=True,
+                            no_tick_marks=True,
+                            no_gridlines=True,
+                            lock_min=True,
+                            lock_max=True,
+                        )
+                        dpg.set_axis_limits_constraints(f"xaxis_{i}", 0, SAMPLES)
+
+                        # series 1
+                        dpg.add_line_series(
+                            [],
+                            [],
+                            parent=f"yaxis_{i}",
+                            tag=f"series_{i}",
+                            shaded=True,
+                        )
+
+            dpg.setup_dearpygui()
+            dpg.show_viewport()
+            dpg.set_primary_window("laft", True)
+            frame = 0
+            while dpg.is_dearpygui_running():
+                if frame % 30 == 0:
+                    update_data()
+                    frame = 0
+                frame += 1
+                dpg.render_dearpygui_frame()
+            dpg.start_dearpygui()
+            dpg.destroy_context()
     except usb.core.USBError as e:
         eprint(f"error: {e}")
         sys.exit(1)
