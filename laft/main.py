@@ -1,4 +1,6 @@
 import argparse
+import queue
+import threading
 from array import array
 import usb.core
 import sys
@@ -46,19 +48,16 @@ def trace_request_tx(size: int, ep_in, ep_out) -> list[list[int]]:
     for i in range(0, (63 + size * NUM_TRACES // 8) // 64):
         resp += list(ep_in.read(64))
 
-    out = []
+    out = [[] for i in range(16)]
     # unflatten the flattened list
     for i in range(size):
         b1 = i * 2
         b2 = i * 2 + 1
 
-        bits = []
         for i in range(8):
-            bits.append(resp[b1] & 1 << i)
+            out[i].append(resp[b1] & 1 << i)
         for i in range(8):
-            bits.append(resp[b2] & 1 << i)
-
-        out.append(bits)
+            out[i + 8].append(resp[b2] & 1 << i)
     return out
 
 
@@ -149,14 +148,30 @@ def main():
             dpg.create_viewport(title="laft", width=600, height=600)
 
             SAMPLES = 500
+            EXPAND = 50
+            update = [True]
 
-            def update_data():
-                resp = trace_request_tx(SAMPLES, ep_in, ep_out)
+            def toggle_update():
+                update[0] = not update[0]
+                if update[0]:
+                    dpg.set_item_label("update_button", "Stop Capture")
+                else:
+                    dpg.set_item_label("update_button", "Start Capture")
+
+            def update_data(resp):
                 for i in range(16):
-                    dpg.set_value(f"series_{i}", [[i for i in range(SAMPLES)], resp[i]])
+                    xaxis = [j for j in range(SAMPLES * EXPAND)]
+                    yaxis = [0 for j in range(SAMPLES * EXPAND)]
+                    for j in range(SAMPLES):
+                        for k in range(EXPAND):
+                            yaxis[j * EXPAND + k] = resp[i][j]
+                    dpg.set_value(f"series_{i}", [xaxis, yaxis])
 
             with dpg.window(tag="laft"):
-                dpg.add_text("Hello, World")
+                dpg.add_button(
+                    label="Stop Capture", tag="update_button", callback=toggle_update
+                )
+
                 for i in range(16):
                     # plot for a waveform
                     with dpg.plot(
@@ -188,12 +203,14 @@ def main():
                             lock_min=True,
                             lock_max=True,
                         )
-                        dpg.set_axis_limits_constraints(f"xaxis_{i}", 0, SAMPLES)
+                        dpg.set_axis_limits_constraints(
+                            f"xaxis_{i}", 0, SAMPLES * EXPAND
+                        )
 
                         # series 1
                         dpg.add_line_series(
-                            [],
-                            [],
+                            [j for j in range(SAMPLES * EXPAND)],
+                            [0 for j in range(SAMPLES * EXPAND)],
                             parent=f"yaxis_{i}",
                             tag=f"series_{i}",
                             shaded=True,
@@ -202,14 +219,37 @@ def main():
             dpg.setup_dearpygui()
             dpg.show_viewport()
             dpg.set_primary_window("laft", True)
-            frame = 0
+            dataq = queue.Queue()
+            cmdq = queue.Queue()
+
+            # The worker is controlled by commands passed by cmdq
+            # 0 is shutdown, 1 is get data, 2 is wait
+            def populate_q_worker():
+                while True:
+                    cmd = cmdq.get()
+                    if cmd == 0:
+                        break
+                    elif cmd == 1:
+                        if dataq.empty():
+                            resp = trace_request_tx(SAMPLES, ep_in, ep_out)
+                            dataq.put(resp)
+                    elif cmd == 2:
+                        pass
+
+            worker = threading.Thread(target=populate_q_worker, daemon=True)
+            worker.start()
             while dpg.is_dearpygui_running():
-                if frame % 30 == 0:
-                    update_data()
-                    frame = 0
-                frame += 1
+                if update[0]:
+                    try:
+                        resp = dataq.get_nowait()
+                        update_data(resp)
+                    except queue.Empty:
+                        cmdq.put(1)
+                else:
+                    cmdq.put(2)
                 dpg.render_dearpygui_frame()
-            dpg.start_dearpygui()
+            cmdq.put(0)
+            worker.join()
             dpg.destroy_context()
     except usb.core.USBError as e:
         eprint(f"error: {e}")
