@@ -668,84 +668,72 @@ void dma_irq_0_handler() {
   }
 }
 
-void init_the_pio(pio_sm_config *c, uint offset) {
+void init_the_pio(pio_sm_config *c, uint offset, pio_hw_t *pio) {
   sm_config_set_in_pins(c, 8);
   sm_config_set_jmp_pin(c, 8);
   sm_config_set_in_shift(c, true, true, 32);
-  sm_config_set_fifo_join(c, PIO_FIFO_JOIN_RX);
-  pio_sm_init(pio0, 0, offset, c);
+  pio_sm_init(pio, 0, offset, c);
 }
 
 void pio_dma_init() {
   uint16_t capture_prog_instr = pio_encode_in(pio_pins, 16);
   struct pio_program capture_prog = {
       .instructions = &capture_prog_instr, .length = 1, .origin = -1};
-  uint offset = pio_add_program(pio0, &capture_prog);
-  pio_sm_config c = pio_get_default_sm_config();
-  sm_config_set_wrap(&c, offset, offset);
-  init_the_pio(&c, offset);
+  uint offset0 = pio_add_program(pio0, &capture_prog);
+  pio_sm_config c0 = pio_get_default_sm_config();
+  sm_config_set_wrap(&c0, offset0, offset0);
+  init_the_pio(&c0, offset0, pio0);
+
+  uint offset1 = pio_add_program(pio1, &read_rising_edge_program);
+  pio_sm_config c1 = read_rising_edge_program_get_default_config(offset1);
+  init_the_pio(&c1, offset1, pio1);
+
   irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_0_handler);
   irq_set_enabled(DMA_IRQ_0, true);
 }
 
 // This sets up a PIO state machine which constantly reads gipos 8-15. It then
 // takes a DMA channel which will
-void pio_dma_arm(uint8_t *out_buf) {
+void pio_dma_arm(uint8_t *out_buf, pio_hw_t *pio) {
   printf("arming\n");
   pio_sm_set_enabled(pio0, 0, false);
+  pio_sm_set_enabled(pio1, 0, false);
   // Need to clear _input shift counter_, as well as FIFO, because there may be
   // partial ISR contents left over from a previous run. sm_restart does this.
-  pio_sm_clear_fifos(pio0, 0);
-  pio_sm_restart(pio0, 0);
+  pio_sm_clear_fifos(pio, 0);
+  pio_sm_restart(pio, 0);
 
   dma_channel_config c = dma_channel_get_default_config(0);
   channel_config_set_read_increment(&c, false);
   channel_config_set_write_increment(&c, true);
-  channel_config_set_dreq(&c, pio_get_dreq(pio0, 0, false));
+  channel_config_set_dreq(&c, pio_get_dreq(pio, 0, false));
 
   dma_channel_configure(0, &c,
                         out_buf,                // Destination pointer
-                        &pio0->rxf[0],          // Source pointer
+                        &pio->rxf[0],           // Source pointer
                         TRACES * MAX_BITS / 32, // Number of transfers
                         true                    // Start immediately
   );
 
   dma_channel_set_irq0_enabled(0, true);
-  pio_sm_set_enabled(pio0, 0, true);
+  pio_sm_set_enabled(pio, 0, true);
 
   printf("armed\n");
 }
 
-void respond_to_trace_request() {
-  pio_sm_set_enabled(pio0, 0, false);
-  uint16_t capture_prog_instr = pio_encode_in(pio_pins, 16);
-  struct pio_program capture_prog = {
-      .instructions = &capture_prog_instr, .length = 1, .origin = -1};
-  uint offset = pio_add_program(pio0, &capture_prog);
-  pio_sm_config c = pio_get_default_sm_config();
-  sm_config_set_wrap(&c, offset, offset);
-  init_the_pio(&c, offset);
-  pio_dma_arm(write_buf);
-}
+void respond_to_trace_request() { pio_dma_arm(write_buf, pio0); }
 
 void respond_to_freq_request() {
   uint32_t target = ((uint32_t *)cmd_buf)[1];
   printf("target: %d\n", target);
   float div = (float)CLK / target;
   pio_sm_set_clkdiv(pio0, 0, div);
+  pio_sm_set_clkdiv(pio1, 0, div);
   push_queue(&req_queue, usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL,
              64);
 }
 
-void respond_to_rising_edge_trigger_request() {
-  printf("string the arming\n");
-  pio_sm_set_enabled(pio0, 0, false);
-  uint offset = pio_add_program(pio0, &read_rising_edge_program);
-  pio_sm_config c = read_rising_edge_program_get_default_config(offset);
-  init_the_pio(&c, offset);
-
-  pio_dma_arm(write_buf);
-}
+void respond_to_rising_edge_trigger_request() { pio_dma_arm(write_buf, pio1); }
 
 int main(void) {
   set_sys_clock_hz(CLK, true);
