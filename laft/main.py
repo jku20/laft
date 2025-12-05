@@ -185,9 +185,10 @@ def main():
         dpg.create_context()
         dpg.create_viewport(title="laft", width=600, height=600)
 
-        SAMPLES = 500
+        SAMPLES = [500]
         EXPAND = 50
         update = [True]
+        freq = [100000000]
 
         def toggle_update():
             update[0] = not update[0]
@@ -196,11 +197,21 @@ def main():
             else:
                 dpg.set_item_label("update_button", "Start Capture")
 
+        def set_freq(sender):
+            print(dpg.get_value(sender))
+            freq[0] = dpg.get_value(sender)
+
+        def set_samples(sender):
+            SAMPLES[0] = dpg.get_value(sender)
+
+        def update_config():
+            freq_request_tx(freq[0], ep_in, ep_out)
+
         def update_data(resp):
             for i in range(16):
-                xaxis = [j for j in range(SAMPLES * EXPAND)]
-                yaxis = [0 for j in range(SAMPLES * EXPAND)]
-                for j in range(SAMPLES):
+                xaxis = [j for j in range(SAMPLES[0] * EXPAND)]
+                yaxis = [0 for j in range(SAMPLES[0] * EXPAND)]
+                for j in range(SAMPLES[0]):
                     for k in range(EXPAND):
                         yaxis[j * EXPAND + k] = resp[i][j]
                 dpg.set_value(f"series_{i}", [xaxis, yaxis])
@@ -209,6 +220,23 @@ def main():
             dpg.add_button(
                 label="Stop Capture", tag="update_button", callback=toggle_update
             )
+
+            dpg.add_input_int(
+                label="Read Frequency (Hz)",
+                callback=set_freq,
+                min_value=1,
+                default_value=125_000_000,
+                step=0,
+            )
+            dpg.add_input_int(
+                label="Number of Samples to Collect",
+                callback=set_samples,
+                min_value=0,
+                max_value=65535,
+                default_value=500,
+                step=0,
+            )
+            dpg.add_button(label="Update Config", callback=update_config)
 
             for i in range(16):
                 # plot for a waveform
@@ -241,12 +269,14 @@ def main():
                         lock_min=True,
                         lock_max=True,
                     )
-                    dpg.set_axis_limits_constraints(f"xaxis_{i}", 0, SAMPLES * EXPAND)
+                    dpg.set_axis_limits_constraints(
+                        f"xaxis_{i}", 0, SAMPLES[0] * EXPAND
+                    )
 
                     # series 1
                     dpg.add_line_series(
-                        [j for j in range(SAMPLES * EXPAND)],
-                        [0 for j in range(SAMPLES * EXPAND)],
+                        [j for j in range(SAMPLES[0] * EXPAND)],
+                        [0 for j in range(SAMPLES[0] * EXPAND)],
                         parent=f"yaxis_{i}",
                         tag=f"series_{i}",
                         shaded=True,
@@ -269,7 +299,7 @@ def main():
                 elif cmd == 1:
                     if dataq.empty():
                         print("capturing")
-                        resp = trace_request_tx(SAMPLES, ep_in, ep_out)
+                        resp = trace_request_tx(SAMPLES[0], ep_in, ep_out)
                         dataq.put(resp)
                 elif cmd == 2:
                     pass
