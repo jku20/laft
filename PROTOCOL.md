@@ -23,3 +23,14 @@ A frequency set request starts with a 1 byte opcode, 0x01. It then followed with
 
 #### Response
 The MCU is not expected to respond to this request.
+
+### Rising Edge Trigger Request
+#### Request
+|04|X|P|SSSS|XXXXXXXX|
+
+This request request is used to dump data from every trace attached to the logic analyzer starting on a rising edge for a pin specified by P. This is similar to a trace request, but instead of starting recording at some arbitrary point in time, it starts on a rising edge.
+
+The format is composed of a one byte opcode, followed by a nibble of don't cares and then a 4 bit number, the pin of the logic analyzer to look for an edge on. This is followed by a little endian two byte size, the number of bits to record *from each trace*. The request is then padded by four bytes of don't cares.
+
+#### Response
+The response is a series of 8 byte responses, the raw data from each trace. It's format is the same as a Trace Request. Refer to that for more details.

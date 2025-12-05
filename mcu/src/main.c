@@ -33,6 +33,9 @@
 // Request queue
 #include "request_queue.h"
 
+// The pio
+#include "read_rising_edge.pio.h"
+
 #define usb_hw_set ((usb_hw_t *)hw_set_alias_untyped(usb_hw))
 #define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
 
@@ -44,6 +47,7 @@ void ep1_out_handler(uint8_t *buf, uint16_t len);
 void ep2_in_handler(uint8_t *buf, uint16_t len);
 void respond_to_trace_request();
 void respond_to_freq_request();
+void respond_to_rising_edge_trigger_request();
 
 #define TRACES 16
 #define MAX_BITS 1000
@@ -604,6 +608,11 @@ void ep1_out_handler(uint8_t *buf, uint16_t len) {
   case 2:
     printf("responding to freq request\n");
     respond_to_freq_request();
+    break;
+  case 4:
+    printf("responding to rising edge trigger request\n");
+    respond_to_rising_edge_trigger_request();
+    break;
   default:
     break;
   }
@@ -657,19 +666,23 @@ void dma_irq_0_handler() {
   }
 }
 
+void init_the_pio(pio_sm_config *c, uint offset) {
+  sm_config_set_in_pins(c, 8);
+  sm_config_set_jmp_pin(c, 8);
+  sm_config_set_wrap(c, offset, offset);
+  sm_config_set_clkdiv(c, 1.f);
+  sm_config_set_in_shift(c, true, true, 32);
+  sm_config_set_fifo_join(c, PIO_FIFO_JOIN_RX);
+  pio_sm_init(pio0, 0, offset, c);
+}
+
 void pio_dma_init() {
   uint16_t capture_prog_instr = pio_encode_in(pio_pins, 16);
   struct pio_program capture_prog = {
       .instructions = &capture_prog_instr, .length = 1, .origin = -1};
   uint offset = pio_add_program(pio0, &capture_prog);
   pio_sm_config c = pio_get_default_sm_config();
-  sm_config_set_in_pins(&c, 8);
-  sm_config_set_wrap(&c, offset, offset);
-  sm_config_set_clkdiv(&c, 1.f);
-  sm_config_set_in_shift(&c, true, true, 32);
-  sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
-  pio_sm_init(pio0, 0, offset, &c);
-
+  init_the_pio(&c, offset);
   irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_0_handler);
   irq_set_enabled(DMA_IRQ_0, true);
 }
@@ -703,6 +716,7 @@ void pio_dma_arm(uint8_t *out_buf) {
 }
 
 void respond_to_trace_request() { pio_dma_arm(write_buf); }
+
 void respond_to_freq_request() {
   uint32_t target = ((uint32_t *)cmd_buf)[1];
   printf("target: %d\n", target);
@@ -710,6 +724,19 @@ void respond_to_freq_request() {
   pio_sm_set_clkdiv(pio0, 0, div);
   push_queue(&req_queue, usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL,
              64);
+}
+
+void respond_to_rising_edge_trigger_request() {
+  printf("string the arming\n");
+  pio_sm_set_enabled(pio0, 0, false);
+  pio_sm_clear_fifos(pio0, 0);
+  pio_sm_restart(pio0, 0);
+
+  uint offset = pio_add_program(pio0, &read_rising_edge_program);
+  pio_sm_config c = read_rising_edge_program_get_default_config(offset);
+  init_the_pio(&c, offset);
+
+  pio_dma_arm(write_buf);
 }
 
 int main(void) {

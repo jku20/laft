@@ -1,0 +1,12 @@
+.program read_rising_edge
+
+; This reads a rising edge and upon doing so will begin reading from input pins forever
+
+top:
+  jmp pin, top
+  jmp pin, read
+  jmp top
+read:
+.wrap_target
+  in pins, 16
+.wrap

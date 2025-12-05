@@ -9,6 +9,9 @@ project(laft C CXX ASM)
 pico_sdk_init()
 
 add_executable(laft)
+
+pico_generate_pio_header(laft ${CMAKE_CURRENT_LIST_DIR}/src/read_rising_edge.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
+
 target_sources(laft PRIVATE
   src/main.c
   src/request_queue.c
