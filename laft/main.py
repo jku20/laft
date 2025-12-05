@@ -4,6 +4,7 @@ import threading
 from array import array
 import usb.core
 import sys
+import libusb_package
 
 import dearpygui.dearpygui as dpg
 
@@ -28,7 +29,7 @@ NUM_TRACES = 16
 
 
 def connect(vid: int, pid: int) -> usb.core.Device:
-    dev = usb.core.find(idVendor=VID, idProduct=PID)
+    dev = libusb_package.find(idVendor=VID, idProduct=PID)
     if dev is None:
         raise RuntimeError(f"device {vid:04x}:{pid:04x} not found.")
     return dev
