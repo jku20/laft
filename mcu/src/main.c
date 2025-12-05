@@ -717,6 +717,7 @@ void pio_dma_arm(uint8_t *out_buf) {
 }
 
 void respond_to_trace_request() {
+  pio_sm_set_enabled(pio0, 0, false);
   uint16_t capture_prog_instr = pio_encode_in(pio_pins, 16);
   struct pio_program capture_prog = {
       .instructions = &capture_prog_instr, .length = 1, .origin = -1};
@@ -738,6 +739,7 @@ void respond_to_freq_request() {
 
 void respond_to_rising_edge_trigger_request() {
   printf("string the arming\n");
+  pio_sm_set_enabled(pio0, 0, false);
   uint offset = pio_add_program(pio0, &read_rising_edge_program);
   pio_sm_config c = read_rising_edge_program_get_default_config(offset);
   init_the_pio(&c, offset);
