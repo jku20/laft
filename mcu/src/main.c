@@ -644,7 +644,8 @@ void dma_irq_0_handler() {
   read_buf = write_buf;
   write_buf = tmp;
 
-  int bits = (cmd_buf[1] << 8) + cmd_buf[2];
+  int bits = (cmd_buf[2] << 8) + cmd_buf[3];
+  printf("bits: %d\n", bits);
   int bytes = bits * TRACES / 8;
   int cnt = 0;
   for (int i = 0; i < bytes; i++) {
@@ -661,6 +662,7 @@ void dma_irq_0_handler() {
   printf("IRQ run\n");
   // Start transmitting over USB.
   if (!is_empty_queue(&req_queue)) {
+    printf("actually strating a req\n");
     request *r = pop_front_queue(&req_queue);
     usb_start_transfer(r->ep, r->buf, r->len);
   }

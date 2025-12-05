@@ -4,11 +4,11 @@ The laft usb application must communicate with the logic analyzer. They do it wi
 ## Opcodes
 ### Trace Request
 #### Request
-|01|SSSS|XXXXXXXXXX|
+|01|XX|SSSS|XXXXXXXX|
 
 This request is used to dump data from every trace attached to the logic analyzer.
 
-A trace request starts with a 1 byte opcode, 0x01. It then follows with a 2 byte big endian integer, the number of *bits* of data being requested *from each trace*. It then ends with 5 don't care bytes.
+A trace request starts with a 1 byte opcode, 0x01. It then follows with a 2 bytes of don't care. It then is a 2 byte little endian integer, the number of *bits* of data being requested *from each trace*. It then ends with 4 don't care bytes.
 
 #### Response
 The response will be a series of 8 byte responses, the raw data form each trace. Bits from each every trace are packaged into 2 bytes (traces indexed lower being first) and then this packed data is sequenced. It is sent over 64 bit responses. The final response may be incomplete, in which case the final bytes will be don't cares.

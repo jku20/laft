@@ -54,7 +54,7 @@ def read_data_request(size: int, ep_in) -> list[list[int]]:
 
 
 def trace_request(size: int) -> array:
-    return array("B", [0x01, (size & 0xFF00) >> 8, size & 0x00FF] + 5 * [0])
+    return array("B", [0x01, 0x00, (size & 0xFF00) >> 8, size & 0x00FF] + 4 * [0])
 
 
 def trace_request_tx(size: int, ep_in, ep_out) -> list[list[int]]:
