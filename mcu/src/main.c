@@ -670,7 +670,6 @@ void init_the_pio(pio_sm_config *c, uint offset) {
   sm_config_set_in_pins(c, 8);
   sm_config_set_jmp_pin(c, 8);
   sm_config_set_wrap(c, offset, offset);
-  sm_config_set_clkdiv(c, 1.f);
   sm_config_set_in_shift(c, true, true, 32);
   sm_config_set_fifo_join(c, PIO_FIFO_JOIN_RX);
   pio_sm_init(pio0, 0, offset, c);
