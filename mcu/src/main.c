@@ -62,6 +62,10 @@ static uint8_t *write_buf = data1;
 static uint8_t cmd_buf[8];
 struct usb_endpoint_configuration *cmd_ep;
 
+// Offsets for the PIO programs
+static uint trigger_whenever_offset;
+static uint trigger_on_rising_edge_offset;
+
 // Global device address
 static bool should_set_address = false;
 static uint8_t dev_addr = 0;
@@ -679,14 +683,16 @@ void pio_dma_init() {
   uint16_t capture_prog_instr = pio_encode_in(pio_pins, 16);
   struct pio_program capture_prog = {
       .instructions = &capture_prog_instr, .length = 1, .origin = -1};
-  uint offset0 = pio_add_program(pio0, &capture_prog);
+  trigger_whenever_offset = pio_add_program(pio0, &capture_prog);
   pio_sm_config c0 = pio_get_default_sm_config();
-  sm_config_set_wrap(&c0, offset0, offset0);
-  init_the_pio(&c0, offset0, pio0);
+  sm_config_set_wrap(&c0, trigger_whenever_offset, trigger_whenever_offset);
+  init_the_pio(&c0, trigger_whenever_offset, pio0);
 
-  uint offset1 = pio_add_program(pio1, &read_rising_edge_program);
-  pio_sm_config c1 = read_rising_edge_program_get_default_config(offset1);
-  init_the_pio(&c1, offset1, pio1);
+  trigger_on_rising_edge_offset =
+      pio_add_program(pio1, &read_rising_edge_program);
+  pio_sm_config c1 = read_rising_edge_program_get_default_config(
+      trigger_on_rising_edge_offset);
+  init_the_pio(&c1, trigger_on_rising_edge_offset, pio1);
 
   irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_0_handler);
   irq_set_enabled(DMA_IRQ_0, true);
@@ -698,10 +704,13 @@ void pio_dma_arm(uint8_t *out_buf, pio_hw_t *pio) {
   printf("arming\n");
   pio_sm_set_enabled(pio0, 0, false);
   pio_sm_set_enabled(pio1, 0, false);
-  // Need to clear _input shift counter_, as well as FIFO, because there may be
-  // partial ISR contents left over from a previous run. sm_restart does this.
   pio_sm_clear_fifos(pio, 0);
   pio_sm_restart(pio, 0);
+  if (pio == pio1) {
+    pio_sm_exec(pio, 0, pio_encode_jmp(trigger_on_rising_edge_offset));
+  } else if (pio == pio0) {
+    pio_sm_exec(pio, 0, pio_encode_jmp(trigger_whenever_offset));
+  }
 
   dma_channel_config c = dma_channel_get_default_config(0);
   channel_config_set_read_increment(&c, false);
