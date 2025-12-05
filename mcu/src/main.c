@@ -23,6 +23,7 @@
 // For resetting the USB controller
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
+#include "hardware/gpio.h"
 #include "hardware/pio.h"
 #include "hardware/pwm.h"
 #include "hardware/resets.h"
@@ -751,6 +752,11 @@ int main(void) {
   reset_queue(&req_queue);
   pio_dma_init();
 
+  for (int i = 8; i < 8 + 15; i++) {
+    gpio_init(i);
+    gpio_set_dir_in_masked(1 << i);
+  }
+
   for (int i = 0; i < TRACES * MAX_BITS; i++) {
     read_buf[i] = i;
   }
@@ -773,7 +779,6 @@ int main(void) {
   pwm_set_enabled(slice_num, true);
 
   printf("configured pwm, spinning forever now!");
-
   // Everything is interrupt driven so just loop here
   while (1) {
     tight_loop_contents();

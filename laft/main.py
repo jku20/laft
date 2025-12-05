@@ -34,11 +34,11 @@ def connect(vid: int, pid: int) -> usb.core.Device:
     return dev
 
 
-def read_data_request(size: int, ep_in) -> list[list[int]]:
+def read_data_request(size: int, ep_in, timeout: int = 1000) -> list[list[int]]:
     # read response packets
     resp = []
     for i in range(0, (63 + size * NUM_TRACES // 8) // 64):
-        resp += list(ep_in.read(64))
+        resp += list(ep_in.read(64, timeout=timeout))
 
     out = [[] for i in range(16)]
     # unflatten the flattened list
@@ -76,7 +76,7 @@ def rising_edge_trigger_request_tx(
     req = rising_edge_trigger_request(size, pin)
     ep_out.write(req)
 
-    return read_data_request(size, ep_in)
+    return read_data_request(size, ep_in, timeout=10000)
 
 
 def freq_request(freq: int) -> array:
