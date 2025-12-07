@@ -5,18 +5,42 @@
 #define NUM_STAGES 4
 
 typedef struct {
+  /** The samples stall for after match before either starting capture or
+   * incrementing the trigger level. */
   uint16_t delay;
+
+  /** Used when in serial mode. */
   uint8_t channel;
+
+  /** The level at which to use this trigger. Initially this is at level 0 and
+   * is incremented on successful matches to triggers. */
   uint8_t level;
+
+  /** True if the trigger is in serial mode, else false and the trigger is in
+   * parallel mode. */
   bool serial;
+
+  /** If true start capturing, else simply increase the trigger level */
   bool start;
 } TriggerConfiguration;
 
+/**
+ * Of these flags, we only have support for channel groups and at that only
+ * channel groups 0 and 1.
+ */
 typedef struct {
+  /** Copy channels 0 and 1 to all 2 and 3. */
   bool demux;
+
+  /** Use noise filter on input module, unsupported. */
   bool filter;
+
   uint8_t channel_groups;
+
+  /** Use external clock, unsupported. */
   bool external;
+
+  /** Invert the clock, unsupported. */
   bool inverted;
 } LogicAnalyzerFlags;
 
