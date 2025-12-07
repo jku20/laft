@@ -757,6 +757,9 @@ int main(void) {
     gpio_set_dir_in_masked(1 << i);
   }
 
+  gpio_init(26);
+  gpio_set_dir_in_masked(1 << 26);
+
   gpio_init(5);
   gpio_set_dir_out_masked(1 << 5);
   gpio_put(5, 0);
