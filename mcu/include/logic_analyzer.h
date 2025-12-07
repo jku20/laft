@@ -1,10 +1,30 @@
+#include "bitset.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-const uint8_t LOGIC_ANALYZR_ID[] = {'S', 'L', 'A', '1'};
+#define NUM_STAGES 4
+
+typedef struct {
+  uint16_t delay;
+  uint8_t channel;
+  uint8_t level;
+  bool serial;
+  bool start;
+} TriggerConfiguration;
+
+const uint8_t LOGIC_ANALYZR_ID[] = {'1', 'A', 'L', 'S'};
 const uint8_t SUMP_ID_LEN = 4;
 typedef struct {
   bool paused;
+  /** The logic analyzer's current trigger masks, indexed by their stage. */
+  Bitset32 trigger_mask[NUM_STAGES];
+
+  /** The logic analyzer's current trigger values, indexed by their stage. */
+  Bitset32 trigger_value[NUM_STAGES];
+
+  /** The logic analyzer's current trigger configurations, indexed by their
+   * stage. */
+  TriggerConfiguration trigger_config[NUM_STAGES];
 } LogicAnalyzer;
 
 typedef enum {
@@ -13,18 +33,38 @@ typedef enum {
   Id = 0x02,
   Xon = 0x11,
   Xoff = 0x13,
+  SetTriggerMaskStage0 = 0xc0,
+  SetTriggerMaskStage1 = 0xc4,
+  SetTriggerMaskStage2 = 0xc8,
+  SetTriggerMaskStage3 = 0xcc,
+  SetTriggerValueStage0 = 0xc1,
+  SetTriggerValueStage1 = 0xc5,
+  SetTriggerValueStage2 = 0xc9,
+  SetTriggerValueStage3 = 0xcd,
+  SetTriggerConfigStage0 = 0xc2,
+  SetTriggerConfigStage1 = 0xc6,
+  SetTriggerConfigStage2 = 0xca,
+  SetTriggerConfigStage3 = 0xce,
 } SumpCommandType;
 
 typedef struct {
   SumpCommandType ty;
+  uint32_t data;
 } SumpCommand;
 
 void la_set_paused(LogicAnalyzer *self, bool paused);
 void la_init(LogicAnalyzer *self);
 uint8_t *la_get_id(LogicAnalyzer *self);
 void la_arm(LogicAnalyzer *self);
+void la_set_trigger_mask(LogicAnalyzer *self, Bitset32 mask, int stage);
+void la_set_trigger_value(LogicAnalyzer *self, Bitset32 value, int stage);
+void la_set_trigger_config(LogicAnalyzer *self, TriggerConfiguration config,
+                           int stage);
 void la_transmit(LogicAnalyzer *self, uint8_t *buf, int len);
-
 void la_queue_command(LogicAnalyzer *self, SumpCommand *cmd);
 
-SumpCommandType sump_get_type(SumpCommand *self);
+SumpCommandType sc_get_ty(SumpCommand *self);
+Bitset32 sc_get_mask(SumpCommand *self);
+Bitset32 sc_get_value(SumpCommand *self);
+int sc_get_stage(SumpCommand *self);
+TriggerConfiguration sc_get_trigger_configuration(SumpCommand *self);
