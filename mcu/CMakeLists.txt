@@ -15,6 +15,7 @@ pico_generate_pio_header(laft ${CMAKE_CURRENT_LIST_DIR}/src/read_rising_edge.pio
 target_sources(laft PRIVATE
   src/main.c
   src/logic_analyzer.c
+  src/bitset.c
 )
 
 target_include_directories(laft PRIVATE
