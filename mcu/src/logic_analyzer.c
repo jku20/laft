@@ -30,13 +30,29 @@ void la_set_trigger_config(LogicAnalyzer *self, TriggerConfiguration config,
   self->trigger_config[stage] = config;
 }
 
+void la_set_clock_divider(LogicAnalyzer *self, uint32_t clock_div) {
+  self->clock_div = clock_div;
+}
+
+void la_set_read_count(LogicAnalyzer *self, uint16_t read_count) {
+  self->read_count = read_count;
+}
+
+void la_set_delay_count(LogicAnalyzer *self, uint16_t delay_count) {
+  self->delay_count = delay_count;
+}
+
+void la_set_flags(LogicAnalyzer *self, LogicAnalyzerFlags flags) {
+  self->flags = flags;
+}
+
 void la_transmit(LogicAnalyzer *_self, uint8_t *buf, int len) {
   for (int i = 0; i < len; i++) {
     putchar(buf[i]);
   }
 }
 
-void la_queue_command(LogicAnalyzer *self, SumpCommand *cmd) {
+void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   switch (sc_get_ty(cmd)) {
     int stage;
   case Reset:
@@ -79,6 +95,16 @@ void la_queue_command(LogicAnalyzer *self, SumpCommand *cmd) {
     TriggerConfiguration config = sc_get_trigger_configuration(cmd);
     la_set_trigger_config(self, config, stage);
     break;
+  case SetDivider:
+    la_set_clock_divider(self, sc_get_clock_div(cmd));
+    break;
+  case SetReadAndDelayCount:
+    la_set_read_count(self, sc_get_read_count(cmd));
+    la_set_delay_count(self, sc_get_delay_count(cmd));
+    break;
+  case SetFlags:
+    la_set_flags(self, sc_get_flags(cmd));
+    break;
   }
 }
 
@@ -100,4 +126,26 @@ int sc_get_stage(SumpCommand *self) {
 TriggerConfiguration sc_get_trigger_configuration(SumpCommand *self) {
   TriggerConfiguration out;
   out.delay = (0xFFFF0000 & self->data) >> 16;
+  out.channel = ((0x0000F000 & self->data) >> 11) | (0x1 & self->data);
+  out.level = (self->data >> 4) & 0x3;
+  out.serial = (self->data >> 2) & 0x1;
+  out.start = (self->data >> 3) & 0x1;
+  return out;
+}
+
+uint32_t sc_get_clock_div(SumpCommand *self) { return (self->data >> 8); }
+
+uint16_t sc_get_read_count(SumpCommand *self) { return self->data >> 16; }
+
+uint16_t sc_get_delay_count(SumpCommand *self) { return self->data & 0xFFFF; }
+
+LogicAnalyzerFlags sc_get_flags(SumpCommand *self) {
+  uint8_t flag_byte = (self->data >> 24);
+  LogicAnalyzerFlags out;
+  out.demux = flag_byte & 0b00000001;
+  out.filter = (flag_byte & 0b00000010) >> 1;
+  out.channel_groups = (flag_byte & 0b00111100) >> 2;
+  out.external = (flag_byte & 0b01000000) >> 6;
+  out.inverted = (flag_byte & 0b10000000) >> 7;
+  return out;
 }
