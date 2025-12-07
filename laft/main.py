@@ -186,6 +186,7 @@ def main():
         dpg.create_viewport(title="laft", width=600, height=600)
 
         SAMPLES = [500]
+        new_samples = [SAMPLES[0]]
         EXPAND = 50
         update = [True]
         freq = [100000000]
@@ -194,18 +195,20 @@ def main():
             update[0] = not update[0]
             if update[0]:
                 dpg.set_item_label("update_button", "Stop Capture")
+                dpg.configure_item("update_config_button", enabled=False)
             else:
                 dpg.set_item_label("update_button", "Start Capture")
+                dpg.configure_item("update_config_button", enabled=True)
 
         def set_freq(sender):
-            print(dpg.get_value(sender))
             freq[0] = dpg.get_value(sender)
 
         def set_samples(sender):
-            SAMPLES[0] = dpg.get_value(sender)
+            new_samples[0] = dpg.get_value(sender)
 
         def update_config():
             freq_request_tx(freq[0], ep_in, ep_out)
+            SAMPLES[0] = new_samples[0]
 
         def update_data(resp):
             for i in range(16):
@@ -236,7 +239,12 @@ def main():
                 default_value=500,
                 step=0,
             )
-            dpg.add_button(label="Update Config", callback=update_config)
+            dpg.add_button(
+                label="Update Config",
+                tag="update_config_button",
+                enabled=False,
+                callback=update_config,
+            )
 
             for i in range(16):
                 # plot for a waveform

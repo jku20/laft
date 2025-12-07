@@ -757,6 +757,13 @@ int main(void) {
     gpio_set_dir_in_masked(1 << i);
   }
 
+  gpio_init(5);
+  gpio_set_dir_out_masked(1 << 5);
+  gpio_put(5, 0);
+  gpio_init(28);
+  gpio_set_dir_out_masked(1 << 28);
+  gpio_put(28, 0);
+
   for (int i = 0; i < TRACES * MAX_BITS; i++) {
     read_buf[i] = i;
   }

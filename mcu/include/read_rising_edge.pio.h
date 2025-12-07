@@ -14,7 +14,7 @@
 
 #define read_rising_edge_wrap_target 3
 #define read_rising_edge_wrap 3
-#define read_rising_edge_pio_version 0
+#define read_rising_edge_pio_version 1
 
 static const uint16_t read_rising_edge_program_instructions[] = {
     0x00c0, //  0: jmp    pin, 0
