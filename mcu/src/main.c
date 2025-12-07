@@ -8,25 +8,34 @@
 #include <hardware/pwm.h>
 #include <pico/stdio.h>
 
+#include "logic_analyzer.h"
+
 const int PICO_CLOCK_SPEED = 125000000;
 
 int main() {
   set_sys_clock_hz(PICO_CLOCK_SPEED, true);
   stdio_init_all();
 
+  // Initialize GPIOS
   for (int i = 8; i < 8 + 15; i++) {
     gpio_init(i);
     gpio_set_dir_in_masked(1 << i);
   }
 
+  gpio_init(26);
+  gpio_set_dir_in_masked(1 << 26);
+
   gpio_init(5);
   gpio_set_dir_out_masked(1 << 5);
   gpio_put(5, 0);
+
   gpio_init(28);
   gpio_set_dir_out_masked(1 << 28);
   gpio_put(28, 0);
 
-  printf("configured, usb, starting pwm!\n");
+  // Initialize the logic analyzer
+  LogicAnalyzer la;
+  la_reset(&la);
 
   // Flicker GPIO 27 which is connected to GPIO 8 so we can read a signal.
   gpio_set_function(27, GPIO_FUNC_PWM);
