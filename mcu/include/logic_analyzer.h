@@ -20,7 +20,7 @@ typedef struct {
    * parallel mode. */
   bool serial;
 
-  /** If true start capturing, else simply increase the trigger level */
+  /** If true start capturing, else simply increase the trigger level. */
   bool start;
 } TriggerConfiguration;
 
