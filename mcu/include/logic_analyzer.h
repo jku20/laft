@@ -12,6 +12,14 @@ typedef struct {
   bool start;
 } TriggerConfiguration;
 
+typedef struct {
+  bool demux;
+  bool filter;
+  uint8_t channel_groups;
+  bool external;
+  bool inverted;
+} LogicAnalyzerFlags;
+
 const uint8_t LOGIC_ANALYZR_ID[] = {'1', 'A', 'L', 'S'};
 const uint8_t SUMP_ID_LEN = 4;
 typedef struct {
@@ -25,6 +33,14 @@ typedef struct {
   /** The logic analyzer's current trigger configurations, indexed by their
    * stage. */
   TriggerConfiguration trigger_config[NUM_STAGES];
+
+  /** The clock divider for the sampler. */
+  uint32_t clock_div;
+
+  uint16_t read_count;
+  uint16_t delay_count;
+
+  LogicAnalyzerFlags flags;
 } LogicAnalyzer;
 
 typedef enum {
@@ -45,6 +61,9 @@ typedef enum {
   SetTriggerConfigStage1 = 0xc6,
   SetTriggerConfigStage2 = 0xca,
   SetTriggerConfigStage3 = 0xce,
+  SetDivider = 0x80,
+  SetReadAndDelayCount = 0x81,
+  SetFlags = 0x82,
 } SumpCommandType;
 
 typedef struct {
@@ -60,11 +79,19 @@ void la_set_trigger_mask(LogicAnalyzer *self, Bitset32 mask, int stage);
 void la_set_trigger_value(LogicAnalyzer *self, Bitset32 value, int stage);
 void la_set_trigger_config(LogicAnalyzer *self, TriggerConfiguration config,
                            int stage);
+void la_set_clock_divider(LogicAnalyzer *self, uint32_t clock_div);
+void la_set_read_count(LogicAnalyzer *self, uint16_t read_count);
+void la_set_delay_count(LogicAnalyzer *self, uint16_t delay_count);
+void la_set_flags(LogicAnalyzer *self, LogicAnalyzerFlags flags);
 void la_transmit(LogicAnalyzer *self, uint8_t *buf, int len);
-void la_queue_command(LogicAnalyzer *self, SumpCommand *cmd);
+void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd);
 
 SumpCommandType sc_get_ty(SumpCommand *self);
 Bitset32 sc_get_mask(SumpCommand *self);
 Bitset32 sc_get_value(SumpCommand *self);
 int sc_get_stage(SumpCommand *self);
 TriggerConfiguration sc_get_trigger_configuration(SumpCommand *self);
+uint32_t sc_get_clock_div(SumpCommand *self);
+uint16_t sc_get_read_count(SumpCommand *self);
+uint16_t sc_get_delay_count(SumpCommand *self);
+LogicAnalyzerFlags sc_get_flags(SumpCommand *self);
