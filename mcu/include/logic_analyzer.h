@@ -72,6 +72,7 @@ typedef struct {
 } SumpCommand;
 
 void la_set_paused(LogicAnalyzer *self, bool paused);
+void la_reset(LogicAnalyzer *self);
 void la_init(LogicAnalyzer *self);
 uint8_t *la_get_id(LogicAnalyzer *self);
 void la_arm(LogicAnalyzer *self);

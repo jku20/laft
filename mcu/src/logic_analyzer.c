@@ -11,6 +11,9 @@ void la_reset(LogicAnalyzer *self) {
     self->trigger_value[i] = bitset_from_uint32(0);
   }
   self->paused = false;
+  self->clock_div = 1;
+  self->read_count = 0;
+  self->delay_count = 0;
 }
 
 uint8_t *la_get_id(LogicAnalyzer *self) { return (uint8_t *)LOGIC_ANALYZR_ID; }
@@ -133,7 +136,7 @@ TriggerConfiguration sc_get_trigger_configuration(SumpCommand *self) {
   return out;
 }
 
-uint32_t sc_get_clock_div(SumpCommand *self) { return (self->data >> 8); }
+uint32_t sc_get_clock_div(SumpCommand *self) { return (self->data >> 8) + 1; }
 
 uint16_t sc_get_read_count(SumpCommand *self) { return self->data >> 16; }
 
