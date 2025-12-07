@@ -47,6 +47,7 @@ int main() {
   printf("configured pwm, spinning forever now!");
   // Everything is interrupt driven so just loop here
   while (1) {
-    tight_loop_contents();
+    SumpCommand cmd = sc_read_from_stdin();
+    la_exec_command(&la, &cmd);
   }
 }

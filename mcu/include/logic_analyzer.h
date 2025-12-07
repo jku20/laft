@@ -96,3 +96,4 @@ uint32_t sc_get_clock_div(SumpCommand *self);
 uint16_t sc_get_read_count(SumpCommand *self);
 uint16_t sc_get_delay_count(SumpCommand *self);
 LogicAnalyzerFlags sc_get_flags(SumpCommand *self);
+SumpCommand sc_read_from_stdin();

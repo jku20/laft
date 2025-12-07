@@ -152,3 +152,45 @@ LogicAnalyzerFlags sc_get_flags(SumpCommand *self) {
   out.inverted = (flag_byte & 0b10000000) >> 7;
   return out;
 }
+
+bool is_short_cmd(SumpCommandType ty) {
+  switch (ty) {
+  case Reset:
+  case Run:
+  case Id:
+  case Xon:
+  case Xoff:
+    return true;
+    break;
+  case SetTriggerMaskStage0:
+  case SetTriggerMaskStage1:
+  case SetTriggerMaskStage2:
+  case SetTriggerMaskStage3:
+  case SetTriggerValueStage0:
+  case SetTriggerValueStage1:
+  case SetTriggerValueStage2:
+  case SetTriggerValueStage3:
+  case SetTriggerConfigStage0:
+  case SetTriggerConfigStage1:
+  case SetTriggerConfigStage2:
+  case SetTriggerConfigStage3:
+  case SetDivider:
+  case SetReadAndDelayCount:
+  case SetFlags:
+    return false;
+    break;
+  }
+}
+
+SumpCommand sc_read_from_stdin() {
+  SumpCommand out;
+  out.ty = getchar();
+  if (is_short_cmd(out.ty)) {
+    return out;
+  }
+  for (int i = 0; i < 4; i++) {
+    out.data <<= 8;
+    out.data |= getchar();
+  }
+  return out;
+}
