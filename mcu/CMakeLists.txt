@@ -14,8 +14,9 @@ pico_generate_pio_header(laft ${CMAKE_CURRENT_LIST_DIR}/src/read_rising_edge.pio
 
 target_sources(laft PRIVATE
   src/main.c
-  src/request_queue.c
+  src/logic_analyzer.c
 )
+
 target_include_directories(laft PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/pico
@@ -34,6 +35,9 @@ target_link_libraries(${PROJECT_NAME}
   hardware_dma
   hardware_pwm
 )
+
+pico_enable_stdio_uart(laft 0)
+pico_enable_stdio_usb(laft 1)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(laft)
