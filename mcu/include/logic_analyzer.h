@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -19,7 +21,7 @@ typedef struct {
   uint8_t level;
 
   /** True if the trigger is in serial mode, else false and the trigger is in
-   * parallel mode. */
+   * parallel mode. Serial mode is unsupported. */
   bool serial;
 
   /** If true start capturing, else simply increase the trigger level. */

@@ -1,5 +1,10 @@
+#pragma once
+
 #include <hardware/pio.h>
 #include <stdint.h>
+
+#include "bitset.h"
+#include "logic_analyzer.h"
 
 // This buffer must be large enough to hold all of the data collected by a SUMP
 // request. That is 2^16 bits. We double this because our timing is not quite
@@ -25,6 +30,11 @@ typedef struct {
  * requires a DMA channel and a PIO state machine.
  */
 void cb_init(CircularBuffer *self, uint base_pin, PIO pio, uint sm, uint dma);
+
+void cb_arm_to_start_collecting(Bitset32 trigger_mask[NUM_STAGES],
+                                Bitset32 trigger_value[NUM_STAGES],
+                                Bitset32 trigger_config[NUM_STAGES],
+                                uint32_t clock_div);
 
 /** Stops reading to the circular buffer from the PIO. */
 void cb_stop_buf_population(CircularBuffer *self);
