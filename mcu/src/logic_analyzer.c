@@ -5,6 +5,18 @@
 
 void la_set_paused(LogicAnalyzer *self, bool paused) { self->paused = paused; }
 
+void la_init(LogicAnalyzer *self, uint base_pin, PIO pio, uint sm, uint dma) {
+  cb_init(&self->buf, base_pin, pio, sm, dma);
+  for (int i = 0; i < NUM_STAGES; i++) {
+    self->trigger_mask[i] = bitset_from_uint32(0);
+    self->trigger_value[i] = bitset_from_uint32(0);
+  }
+  self->paused = false;
+  self->clock_div = 1;
+  self->read_count = 0;
+  self->delay_count = 0;
+}
+
 void la_reset(LogicAnalyzer *self) {
   for (int i = 0; i < NUM_STAGES; i++) {
     self->trigger_mask[i] = bitset_from_uint32(0);

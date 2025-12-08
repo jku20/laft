@@ -1,6 +1,8 @@
-#include "bitset.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "bitset.h"
+#include "circular_buffer.h"
 
 #define NUM_STAGES 4
 
@@ -47,6 +49,8 @@ typedef struct {
 const uint8_t LOGIC_ANALYZR_ID[] = {'1', 'A', 'L', 'S'};
 const uint8_t SUMP_ID_LEN = 4;
 typedef struct {
+  CircularBuffer buf;
+
   bool paused;
   /** The logic analyzer's current trigger masks, indexed by their stage. */
   Bitset32 trigger_mask[NUM_STAGES];
@@ -95,9 +99,9 @@ typedef struct {
   uint32_t data;
 } SumpCommand;
 
+void la_init(LogicAnalyzer *self, uint base_pin, PIO pio, uint sm, uint dma);
 void la_set_paused(LogicAnalyzer *self, bool paused);
 void la_reset(LogicAnalyzer *self);
-void la_init(LogicAnalyzer *self);
 uint8_t *la_get_id(LogicAnalyzer *self);
 void la_arm(LogicAnalyzer *self);
 void la_set_trigger_mask(LogicAnalyzer *self, Bitset32 mask, int stage);
