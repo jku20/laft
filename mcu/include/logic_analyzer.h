@@ -17,7 +17,7 @@ typedef struct {
   uint8_t channel;
 
   /** The level at which to use this trigger. Initially this is at level 0 and
-   * is incremented on successful matches to triggers. */
+   * is incremented on successful matches to triggers. This is unsupported. */
   uint8_t level;
 
   /** True if the trigger is in serial mode, else false and the trigger is in

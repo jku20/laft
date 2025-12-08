@@ -15,3 +15,5 @@ bool bitset_get(Bitset32 *self, int idx) {
 }
 
 uint32_t bitset_get_raw(Bitset32 *self) { return self->data; }
+
+bool bitset_is_empty(Bitset32 *self) { return self->data == 0; }

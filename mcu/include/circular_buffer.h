@@ -31,9 +31,17 @@ typedef struct {
  */
 void cb_init(CircularBuffer *self, uint base_pin, PIO pio, uint sm, uint dma);
 
-void cb_arm_to_start_collecting(Bitset32 trigger_mask[NUM_STAGES],
+/** Sets up the PIO state machine to start collecting data based on a trigger.
+ * We do not implement triggering on specific levels as due to limitations from
+ * PIO blocks, we can't well run multiple stages at the same time. Instead, we
+ * run stages with nonzero trigger masks ordered 0 to NUM_STAGES. Additionally,
+ * particularly bad masks (alternating 1s and 0s) may cause the PIO memory to
+ * overflow. We just assume this doesn't happen and silently do undefined
+ * horrors.*/
+void cb_arm_to_start_collecting(CircularBuffer *self,
+                                Bitset32 trigger_mask[NUM_STAGES],
                                 Bitset32 trigger_value[NUM_STAGES],
-                                Bitset32 trigger_config[NUM_STAGES],
+                                TriggerConfiguration trigger_config[NUM_STAGES],
                                 uint32_t clock_div);
 
 /** Stops reading to the circular buffer from the PIO. */
