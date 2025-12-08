@@ -1,3 +1,4 @@
+#include <hardware/dma.h>
 #include <stdio.h>
 
 // For memcpy
@@ -35,7 +36,8 @@ int main() {
 
   // Initialize the logic analyzer
   LogicAnalyzer la;
-  la_reset(&la);
+  la_init(&la, 8, pio0, pio_claim_unused_sm(pio0, true),
+          dma_claim_unused_channel(true));
 
   // Flicker GPIO 27 which is connected to GPIO 8 so we can read a signal.
   gpio_set_function(27, GPIO_FUNC_PWM);
