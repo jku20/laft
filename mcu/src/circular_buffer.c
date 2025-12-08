@@ -26,7 +26,11 @@ void cb_init(CircularBuffer *self, uint base_pin, PIO pio, uint sm, uint dma) {
 void cb_arm_to_start_collecting(Bitset32 trigger_mask[NUM_STAGES],
                                 Bitset32 trigger_value[NUM_STAGES],
                                 Bitset32 trigger_config[NUM_STAGES],
-                                uint32_t clock_div) {}
+                                uint32_t clock_div) {
+  // This implementation is heavily inspired by the implementation of
+  // [this](https://github.com/dotcypress/ula/blob/40756c4199c9f2ac605a39bfed2eddcc7fe0324b/src/trigger.rs#L65)
+  // function in ula, a logic analyzer implemented for the pico.
+}
 
 void cb_stop_buf_population(CircularBuffer *self) {
   pio_sm_set_enabled(self->pio, self->sm, false);
