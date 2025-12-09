@@ -2,7 +2,7 @@ import serial
 import time
 
 # USER SETTINGS Jeremy Change for Weird Linux Stuff
-PORT = 'COM3'
+PORT = 'COM7'
 BAUD = 115200      
 TIMEOUT = 0.5
 
