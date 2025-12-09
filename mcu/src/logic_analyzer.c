@@ -95,23 +95,38 @@ void transmit_buf(uint8_t *buf, int len) {
   }
 }
 
+uint32_t reverse_bits(uint32_t bits) {
+  uint32_t out = 0;
+  while (bits) {
+    out <<= 1;
+    out |= bits & 1;
+    bits >>= 1;
+  }
+  return out;
+}
+
 void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   switch (sc_get_ty(cmd)) {
     int stage;
   case Reset:
+    printf("Reset\n");
     la_set_paused(self, false);
     break;
   case Run:
+    printf("Run\n");
     la_arm(self);
     break;
   case Id:;
+    printf("Id\n");
     uint8_t *buf = la_get_id(self);
     transmit_buf(buf, SUMP_ID_LEN);
     break;
   case Xon:
+    printf("Xon\n");
     la_set_paused(self, false);
     break;
   case Xoff:
+    printf("Xoff\n");
     la_set_paused(self, true);
     break;
   case SetTriggerMaskStage0:
@@ -120,6 +135,7 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   case SetTriggerMaskStage3:
     stage = sc_get_stage(cmd);
     Bitset32 mask = sc_get_mask(cmd);
+    printf("mask: %x\n", mask.data);
     la_set_trigger_mask(self, mask, stage);
     break;
   case SetTriggerValueStage0:
@@ -128,6 +144,7 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   case SetTriggerValueStage3:
     stage = sc_get_stage(cmd);
     Bitset32 value = sc_get_value(cmd);
+    printf("value: %x\n", value.data);
     la_set_trigger_value(self, value, stage);
     break;
   case SetTriggerConfigStage0:
@@ -136,17 +153,32 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   case SetTriggerConfigStage3:
     stage = sc_get_stage(cmd);
     TriggerConfiguration config = sc_get_trigger_configuration(cmd);
+    printf("(delay, channel, level, serial, start): (%hd, %hhd, %hhd, %d, %d)",
+           config.delay, config.channel, config.level, config.serial,
+           config.start);
     la_set_trigger_config(self, config, stage);
     break;
-  case SetDivider:
-    la_set_clock_divider(self, sc_get_clock_div(cmd));
+  case SetDivider:;
+    uint32_t div = sc_get_clock_div(cmd);
+    printf("div: %d\n", div);
+    la_set_clock_divider(self, div);
     break;
   case SetReadAndDelayCount:
+    printf("(read, delay): (%d, %d)\n", sc_get_read_count(cmd),
+           sc_get_delay_count(cmd));
     la_set_read_count(self, sc_get_read_count(cmd));
     la_set_delay_count(self, sc_get_delay_count(cmd));
     break;
-  case SetFlags:
-    la_set_flags(self, sc_get_flags(cmd));
+  case SetFlags:;
+    LogicAnalyzerFlags flags = sc_get_flags(cmd);
+    printf("(dmux, filter, channel groups, external, inverted): (%d, %d, %d, "
+           "%d, %d)\n",
+           flags.demux, flags.filter, flags.channel_groups, flags.external,
+           flags.inverted);
+    la_set_flags(self, flags);
+    break;
+  default:
+    printf("Unknown\n");
     break;
   }
 }
@@ -168,22 +200,25 @@ int sc_get_stage(SumpCommand *self) {
 
 TriggerConfiguration sc_get_trigger_configuration(SumpCommand *self) {
   TriggerConfiguration out;
-  out.delay = (0xFFFF0000 & self->data) >> 16;
-  out.channel = ((0x0000F000 & self->data) >> 11) | (0x1 & self->data);
-  out.level = (self->data >> 4) & 0x3;
-  out.serial = (self->data >> 2) & 0x1;
-  out.start = (self->data >> 3) & 0x1;
+  uint32_t data = reverse_bits(self->data);
+  out.delay = ((0xFF000000 & data) >> 24) | ((0x00FF0000 & data) >> 16);
+  out.channel = ((0x0000F000 & data) >> 12) | ((0x1 & data) << 4);
+  out.level = (data >> 4) & 0x3;
+  out.serial = (data >> 2) & 0x1;
+  out.start = (data >> 3) & 0x1;
   return out;
 }
 
-uint32_t sc_get_clock_div(SumpCommand *self) { return (self->data >> 8) + 1; }
+uint32_t sc_get_clock_div(SumpCommand *self) {
+  return (0x00FFFFFF & self->data) + 1;
+}
 
-uint16_t sc_get_read_count(SumpCommand *self) { return self->data >> 16; }
+uint16_t sc_get_read_count(SumpCommand *self) { return self->data & 0xFFFF; }
 
-uint16_t sc_get_delay_count(SumpCommand *self) { return self->data & 0xFFFF; }
+uint16_t sc_get_delay_count(SumpCommand *self) { return self->data >> 16; }
 
 LogicAnalyzerFlags sc_get_flags(SumpCommand *self) {
-  uint8_t flag_byte = (self->data >> 24);
+  uint8_t flag_byte = self->data;
   LogicAnalyzerFlags out;
   out.demux = flag_byte & 0b00000001;
   out.filter = (flag_byte & 0b00000010) >> 1;
@@ -228,9 +263,9 @@ SumpCommand sc_read_from_stdin() {
   if (is_short_cmd(out.ty)) {
     return out;
   }
+  out.data = 0;
   for (int i = 0; i < 4; i++) {
-    out.data <<= 8;
-    out.data |= getchar();
+    out.data |= getchar() << (8 * i);
   }
   return out;
 }
