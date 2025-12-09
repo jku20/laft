@@ -27,10 +27,10 @@ void dma_irq_0_handler() {
 #ifdef DEBUG
     printf("i: %d\n", i);
 #endif
-    putchar(0x00FF & la->buf.buf[i]);
-    putchar(0xFF00 & la->buf.buf[i]);
-    putchar(0);
-    putchar(0);
+    // putchar(0x00FF & la->buf.buf[i]);
+    // putchar(0xFF00 & la->buf.buf[i]);
+    // putchar(0);
+    // putchar(0);
 #ifdef DEBUG
     printf("%d%d\n", 0x00FF & la->buf.buf[i], 0xFF00 & la->buf.buf[i]);
 #endif
@@ -68,10 +68,10 @@ void la_reset(LogicAnalyzer *self) {
 uint8_t *la_get_id(LogicAnalyzer *self) { return (uint8_t *)LOGIC_ANALYZR_ID; }
 
 void la_arm(LogicAnalyzer *self) {
+  read_count = self->read_count;
   cb_arm_to_start_collecting(&self->buf, self->trigger_mask,
                              self->trigger_value, self->trigger_config,
                              self->clock_div, self->read_count);
-  read_count = self->read_count;
 #ifdef DEBUG
   printf("armed\n");
 #endif
