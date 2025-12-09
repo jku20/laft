@@ -61,11 +61,11 @@ send(b'\x81' + cnt_bytes)
 # Set sample rate divisor, 0x82 + 2 bytes (big endian), samplerate = clock / (div + 1)
 
 print("\nSetting divider to 4...")
-send(b'\x82\x00\x04')
+send(b'\x80\x00\x04\x00\x04') 
 
-# Set flags: all zeros (no demux, no filter, internal clock, groups enabled)
+# Set flags
 
-send(bytes([0x82, 0x00, 0x00, 0x00, 0x00]))
+send(b'\x82\xFF\xFF\xFF\x7F')
 
 # Arm the capture again
 
