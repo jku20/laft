@@ -1,4 +1,3 @@
-#include "debug.h"
 #include <hardware/dma.h>
 #include <hardware/pio.h>
 #include <hardware/pio_instructions.h>
@@ -8,10 +7,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "debug.h"
+
 #include "logic_analyzer.h"
 
-static int read_count = 0;
-static LogicAnalyzer *la;
+static volatile int read_count = 0;
+static volatile LogicAnalyzer *la;
 
 const uint8_t LOGIC_ANALYZR_ID[] = {'1', 'A', 'L', 'S'};
 const uint8_t SUMP_ID_LEN = 4;
@@ -23,6 +24,7 @@ void dma_irq_0_handler() {
 #endif
   dma_hw->ints0 = 1u << la->buf.dma;
   for (int i = 0; i < read_count; i++) {
+    printf("i: %d\n", i);
     putchar(0x00FF & la->buf.buf[i]);
     putchar(0xFF00 & la->buf.buf[i]);
     putchar(0x00FF & la->buf.buf[i]);
@@ -66,8 +68,8 @@ uint8_t *la_get_id(LogicAnalyzer *self) { return (uint8_t *)LOGIC_ANALYZR_ID; }
 void la_arm(LogicAnalyzer *self) {
   cb_arm_to_start_collecting(&self->buf, self->trigger_mask,
                              self->trigger_value, self->trigger_config,
-                             self->clock_div, self->read_count >> 1);
-  read_count = self->read_count >> 1;
+                             self->clock_div, self->read_count);
+  read_count = self->read_count;
 #ifdef DEBUG
   printf("armed\n");
 #endif
@@ -318,15 +320,6 @@ void cb_init(CircularBuffer *self, uint base_pin, PIO pio, uint sm, uint dma) {
 
   // Disable the PIO so the DMA channel doesn't read nonsense.
   pio_sm_set_enabled(pio, sm, false);
-
-  // Sets the DMA channel to forever copy from the PIO to the circular buffer.
-  dma_channel_config dma_data_config = dma_channel_get_default_config(dma);
-  channel_config_set_read_increment(&dma_data_config, false);
-  channel_config_set_write_increment(&dma_data_config, true);
-  channel_config_set_dreq(&dma_data_config, pio_get_dreq(pio, sm, false));
-  dma_channel_configure(
-      dma, &dma_data_config, self->buf, pio->rxf,
-      dma_encode_transfer_count_with_self_trigger(BUFFER_SIZE), true);
 }
 
 int trailing_zeros(uint32_t n) {
@@ -357,6 +350,9 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
   // function in ula, a logic analyzer implemented for the pico.
   //
   // Generate the program for the PIO.
+  pio_sm_set_enabled(self->pio, self->sm, true);
+  pio_sm_restart(self->pio, self->sm);
+
   uint16_t prog[32];
   memset(prog, 0, sizeof prog);
   int static_pc = 0;
