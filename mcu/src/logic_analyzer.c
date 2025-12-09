@@ -24,11 +24,13 @@ void dma_irq_0_handler() {
 #endif
   dma_hw->ints0 = 1u << la->buf.dma;
   for (int i = 0; i < read_count; i++) {
+#ifdef DEBUG
     printf("i: %d\n", i);
+#endif
     putchar(0x00FF & la->buf.buf[i]);
     putchar(0xFF00 & la->buf.buf[i]);
-    putchar(0x00FF & la->buf.buf[i]);
-    putchar(0xFF00 & la->buf.buf[i]);
+    putchar(0);
+    putchar(0);
 #ifdef DEBUG
     printf("%d%d\n", 0x00FF & la->buf.buf[i], 0xFF00 & la->buf.buf[i]);
 #endif
