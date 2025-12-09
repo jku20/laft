@@ -1,6 +1,8 @@
+#include "debug.h"
 #include <hardware/dma.h>
 #include <hardware/pio.h>
 #include <hardware/pio_instructions.h>
+#include <pico/stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,11 +17,19 @@ const uint8_t LOGIC_ANALYZR_ID[] = {'1', 'A', 'L', 'S'};
 const uint8_t SUMP_ID_LEN = 4;
 
 void dma_irq_0_handler() {
+#ifdef DEBUG
+  printf("the irq is real printing %d things\n", read_count);
+  printf("wat\n");
+#endif
+  dma_hw->ints0 = 1u << la->buf.dma;
   for (int i = 0; i < read_count; i++) {
     putchar(0x00FF & la->buf.buf[i]);
     putchar(0xFF00 & la->buf.buf[i]);
     putchar(0x00FF & la->buf.buf[i]);
     putchar(0xFF00 & la->buf.buf[i]);
+#ifdef DEBUG
+    printf("%d%d\n", 0x00FF & la->buf.buf[i], 0xFF00 & la->buf.buf[i]);
+#endif
   }
 }
 
@@ -58,6 +68,9 @@ void la_arm(LogicAnalyzer *self) {
                              self->trigger_value, self->trigger_config,
                              self->clock_div, self->read_count >> 1);
   read_count = self->read_count >> 1;
+#ifdef DEBUG
+  printf("armed\n");
+#endif
 }
 
 void la_set_trigger_mask(LogicAnalyzer *self, Bitset32 mask, int stage) {
@@ -109,24 +122,31 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   switch (sc_get_ty(cmd)) {
     int stage;
   case Reset:
+#ifdef DEBUG
     printf("Reset\n");
+#endif
     la_set_paused(self, false);
     break;
   case Run:
-    printf("Run\n");
     la_arm(self);
     break;
   case Id:;
+#ifdef DEBUG
     printf("Id\n");
+#endif
     uint8_t *buf = la_get_id(self);
     transmit_buf(buf, SUMP_ID_LEN);
     break;
   case Xon:
+#ifdef DEBUG
     printf("Xon\n");
+#endif
     la_set_paused(self, false);
     break;
   case Xoff:
+#ifdef DEBUG
     printf("Xoff\n");
+#endif
     la_set_paused(self, true);
     break;
   case SetTriggerMaskStage0:
@@ -135,7 +155,9 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   case SetTriggerMaskStage3:
     stage = sc_get_stage(cmd);
     Bitset32 mask = sc_get_mask(cmd);
+#ifdef DEBUG
     printf("mask: %x\n", mask.data);
+#endif
     la_set_trigger_mask(self, mask, stage);
     break;
   case SetTriggerValueStage0:
@@ -144,7 +166,9 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   case SetTriggerValueStage3:
     stage = sc_get_stage(cmd);
     Bitset32 value = sc_get_value(cmd);
+#ifdef DEBUG
     printf("value: %x\n", value.data);
+#endif
     la_set_trigger_value(self, value, stage);
     break;
   case SetTriggerConfigStage0:
@@ -153,32 +177,42 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
   case SetTriggerConfigStage3:
     stage = sc_get_stage(cmd);
     TriggerConfiguration config = sc_get_trigger_configuration(cmd);
+#ifdef DEBUG
     printf("(delay, channel, level, serial, start): (%hd, %hhd, %hhd, %d, %d)",
            config.delay, config.channel, config.level, config.serial,
            config.start);
+#endif
     la_set_trigger_config(self, config, stage);
     break;
   case SetDivider:;
     uint32_t div = sc_get_clock_div(cmd);
+#ifdef DEBUG
     printf("div: %d\n", div);
+#endif
     la_set_clock_divider(self, div);
     break;
   case SetReadAndDelayCount:
+#ifdef DEBUG
     printf("(read, delay): (%d, %d)\n", sc_get_read_count(cmd),
            sc_get_delay_count(cmd));
+#endif
     la_set_read_count(self, sc_get_read_count(cmd));
     la_set_delay_count(self, sc_get_delay_count(cmd));
     break;
   case SetFlags:;
     LogicAnalyzerFlags flags = sc_get_flags(cmd);
+#ifdef DEBUG
     printf("(dmux, filter, channel groups, external, inverted): (%d, %d, %d, "
            "%d, %d)\n",
            flags.demux, flags.filter, flags.channel_groups, flags.external,
            flags.inverted);
+#endif
     la_set_flags(self, flags);
     break;
   default:
+#ifdef DEBUG
     printf("Unknown\n");
+#endif
     break;
   }
 }
@@ -259,7 +293,13 @@ bool is_short_cmd(SumpCommandType ty) {
 
 SumpCommand sc_read_from_stdin() {
   SumpCommand out;
+#ifdef DEBUG
+  printf("starting the getchar\n");
+#endif
   out.ty = getchar();
+#ifdef DEBUG
+  printf("finished the getchar\n");
+#endif
   if (is_short_cmd(out.ty)) {
     return out;
   }

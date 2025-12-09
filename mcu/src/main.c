@@ -46,10 +46,18 @@ int main() {
   pwm_set_chan_level(slice_num, PWM_CHAN_B, 3);
   pwm_set_enabled(slice_num, true);
 
+#ifdef DEBUG
   printf("configured pwm, spinning forever now!");
+#endif
   // Everything is interrupt driven so just loop here
   while (1) {
+#ifdef DEBUG
+    printf("reading command\n");
+#endif
     SumpCommand cmd = sc_read_from_stdin();
+#ifdef DEBUG
+    printf("executing command\n");
+#endif
     la_exec_command(&la, &cmd);
   }
 }
