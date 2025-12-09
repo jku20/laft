@@ -41,14 +41,14 @@ send(b'\x02')
 # Trigger configuration example
 print("\nConfiguring Stage 0: mask=0xFF, value=0xA5")
 
-# Stage 0 mask low byte
-send(bytes([0xC0, 0xFF]))
+# Stage 0 mask 
+send(bytes([0xC0, 0x00, 0x00, 0x00, 0xFF]))
 
-# Stage 0 value low byte
-send(bytes([0xC1, 0xA5]))
+# Stage 0 value 
+send(bytes([0xC1, 0x00, 0x00, 0x00, 0xA5]))
 
-# Stage 0 config byte (bits define trigger mode)
-send(bytes([0xC2, 0x01]))   # 0x01 = level trigger (depends on your firmware)
+# Stage 0 config 
+send(bytes([0xC2, 0x00, 0x00, 0x00, 0x01]))
 
 
 # Set sample count 0x81, request 4096 samples
