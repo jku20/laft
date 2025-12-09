@@ -63,6 +63,10 @@ send(b'\x81' + cnt_bytes)
 print("\nSetting divider to 4...")
 send(b'\x82\x00\x04')
 
+# Set flags: all zeros (no demux, no filter, internal clock, groups enabled)
+
+send(bytes([0x82, 0x00, 0x00, 0x00, 0x00]))
+
 # Arm the capture again
 
 print("\nRUN capture...")
