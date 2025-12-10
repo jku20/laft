@@ -2,16 +2,16 @@ import serial
 import time
 
 # USER SETTINGS Jeremy Change for Weird Linux Stuff
-PORT = "/dev/ttyACM1"
+PORT = "/dev/ttyACM0"
 BAUD = 115200
 TIMEOUT = 0.5
 
 
-ser = serial.Serial(PORT, baudrate=BAUD, timeout=TIMEOUT)
+ser = serial.Serial(PORT, baudrate=BAUD)
 
 S1 = ["--    ", "    --", "------", "      "]
-S2 = ["  \   ", "   /  ", "      ", "      "]
-S3 = ["   \  ", "  /   ", "      ", "      "]
+S2 = ["  \\   ", "   /  ", "      ", "      "]
+S3 = ["   \\  ", "  /   ", "      ", "      "]
 S4 = ["    --", "--    ", "      ", "------"]
 
 
@@ -77,10 +77,19 @@ print("\nConfiguring Stage 0")
 send(bytes([0xC0, 0x80, 0x00, 0x00, 0x00]))
 
 # Stage 0 value
-send(bytes([0xC1, 0x00, 0x00, 0x00, 0xA5]))
+send(bytes([0xC1, 0x80, 0x00, 0x00, 0xA5]))
 
 # Stage 0 config
 send(bytes([0xC2, 0x00, 0x00, 0x00, 0x01]))
+
+# Stage 1 mask
+send(bytes([0xC4, 0x00, 0x00, 0x00, 0x00]))
+
+# Stage 2 mask
+send(bytes([0xC8, 0x00, 0x00, 0x00, 0x00]))
+
+# Stage 3 mask
+send(bytes([0xCC, 0x00, 0x00, 0x00, 0x00]))
 
 
 # Set sample count 0x81, request 4096 samples
@@ -106,12 +115,12 @@ data = ser.read(sample_count * 4)
 c0 = get_channel_n(data, 0)
 pretty_print_waveform(c0)
 
-print("\nTrigger on rising edge")
+print("\nTrigger on falling edge")
 # Stage 1 mask
 send(bytes([0xC4, 0x80, 0x00, 0x00, 0x00]))
 
 # Stage 1 value
-send(bytes([0xC5, 0x80, 0x00, 0x00, 0xA5]))
+send(bytes([0xC5, 0x00, 0x00, 0x00, 0x00]))
 
 # Stage 1 config
 send(bytes([0xC6, 0x00, 0x00, 0x00, 0x01]))

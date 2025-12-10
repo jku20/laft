@@ -444,6 +444,7 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
   sm_config_set_in_shift(&capture_config, false, true, 16);
   sm_config_set_clkdiv(&capture_config, clock_div);
   pio_sm_init(self->pio, self->sm, offset, &capture_config);
+  pio_sm_restart(self->pio, self->sm);
 
   // Sets the DMA channel to copy from the PIO to the circular buffer.
   dma_set_irq0_channel_mask_enabled(1 << self->dma, true);
