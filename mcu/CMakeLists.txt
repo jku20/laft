@@ -35,6 +35,7 @@ target_link_libraries(${PROJECT_NAME}
   hardware_pio
   hardware_dma
   hardware_pwm
+  pico_bootsel_via_double_reset
 )
 
 pico_enable_stdio_uart(laft 0)

@@ -11,30 +11,15 @@
 
 #include "logic_analyzer.h"
 
-static volatile int read_count = 0;
 static volatile LogicAnalyzer *la;
+static volatile bool triggered = false;
 
 const uint8_t LOGIC_ANALYZR_ID[] = {'1', 'A', 'L', 'S'};
 const uint8_t SUMP_ID_LEN = 4;
 
 void dma_irq_0_handler() {
-#ifdef DEBUG
-  printf("the irq is real printing %d things\n", read_count);
-  printf("wat\n");
-#endif
+  triggered = true;
   dma_hw->ints0 = 1u << la->buf.dma;
-  for (int i = 0; i < read_count; i++) {
-#ifdef DEBUG
-    printf("i: %d\n", i);
-#endif
-    // putchar(0x00FF & la->buf.buf[i]);
-    // putchar(0xFF00 & la->buf.buf[i]);
-    // putchar(0);
-    // putchar(0);
-#ifdef DEBUG
-    printf("%d%d\n", 0x00FF & la->buf.buf[i], 0xFF00 & la->buf.buf[i]);
-#endif
-  }
 }
 
 void la_set_paused(LogicAnalyzer *self, bool paused) { self->paused = paused; }
@@ -67,14 +52,37 @@ void la_reset(LogicAnalyzer *self) {
 
 uint8_t *la_get_id(LogicAnalyzer *self) { return (uint8_t *)LOGIC_ANALYZR_ID; }
 
+uint8_t reverse_byte(uint8_t b) {
+  uint8_t out = 0;
+  for (int i = 0; i < 8; i++) {
+    out <<= 1;
+    out |= b & 1;
+    b >>= 1;
+  }
+}
+
 void la_arm(LogicAnalyzer *self) {
-  read_count = self->read_count;
+  int read_count = self->read_count;
   cb_arm_to_start_collecting(&self->buf, self->trigger_mask,
                              self->trigger_value, self->trigger_config,
                              self->clock_div, self->read_count);
+  while (!triggered) {
+  }
+  triggered = false;
 #ifdef DEBUG
-  printf("armed\n");
+  printf("triggered\n");
 #endif
+  for (int i = 0; i < read_count; i++) {
+    uint8_t to_put = self->buf.buf[i];
+    putchar(0x00FF & to_put);
+    putchar((0xFF00 & to_put) >> 8);
+    putchar(0);
+    putchar(0);
+#ifdef DEBUG
+    printf("i: %d\n", i);
+    printf("%d%d\n", 0x00FF & self->buf.buf[i], 0xFF00 & self->buf.buf[i]);
+#endif
+  }
 }
 
 void la_set_trigger_mask(LogicAnalyzer *self, Bitset32 mask, int stage) {
@@ -223,12 +231,20 @@ void la_exec_command(LogicAnalyzer *self, SumpCommand *cmd) {
 
 SumpCommandType sc_get_ty(SumpCommand *self) { return self->ty; }
 
+uint32_t le_to_be(uint32_t num) {
+  uint32_t b0 = (num & 0x000000FF) << 24;
+  uint32_t b1 = (num & 0x0000FF00) << 8;
+  uint32_t b2 = (num & 0x00FF0000) >> 8;
+  uint32_t b3 = (num & 0xFF000000) >> 24;
+  return b0 | b1 | b2 | b3;
+}
+
 Bitset32 sc_get_mask(SumpCommand *self) {
-  return bitset_from_uint32(self->data);
+  return bitset_from_uint32(le_to_be(self->data));
 }
 
 Bitset32 sc_get_value(SumpCommand *self) {
-  return bitset_from_uint32(self->data);
+  return bitset_from_uint32(le_to_be(self->data));
 }
 
 int sc_get_stage(SumpCommand *self) {
@@ -367,11 +383,22 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
     uint32_t mask = bitset_get_raw(&trigger_mask[i]);
     uint32_t value = bitset_get_raw(&trigger_value[i]);
 
-    prog[static_pc++] = pio_encode_mov(pio_osr, pio_pins);
+#ifdef DEBUG
+    printf("mask: %x\n", mask);
+    printf("value: %x\n", value);
+#endif
+
+    prog[static_pc++] = pio_encode_mov_reverse(pio_osr, pio_pins);
+#ifdef DEBUG
+    printf("mov osr, pins\n");
+#endif
     while (mask) {
       int mask_zeros = trailing_zeros(mask);
       if (mask_zeros) {
         prog[static_pc++] = pio_encode_out(pio_null, mask_zeros);
+#ifdef DEBUG
+        printf("out null, %d\n", mask_zeros);
+#endif
         mask >>= mask_zeros;
         value >>= mask_zeros;
       }
@@ -379,15 +406,31 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
       int mask_ones = MIN(trailing_ones(mask), 5);
       if (mask_ones) {
         prog[static_pc++] = pio_encode_out(pio_x, mask_ones);
+#ifdef DEBUG
+        printf("out x, %d\n", mask_ones);
+#endif
         prog[static_pc++] =
             pio_encode_set(pio_y, value & ((1 << mask_ones) - 1));
+#ifdef DEBUG
+        printf("set y, %d\n", value & ((1 << mask_ones) - 1));
+#endif
         prog[static_pc++] = pio_encode_jmp_x_ne_y(stage_offset);
+#ifdef DEBUG
+        printf("jmp x != y\n");
+#endif
         mask >>= mask_ones;
         value >>= mask_ones;
       }
     }
   }
   prog[static_pc++] = pio_encode_in(pio_pins, 16);
+#ifdef DEBUG
+  printf("in pins, 16\n");
+#endif
+
+#ifdef DEBUG
+  printf("program length: %d\n", static_pc);
+#endif
 
   // Assign the PIO program to the state machine
   struct pio_program capture_prog = {
@@ -398,21 +441,27 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
                      offset + static_pc - 1);
   sm_config_set_in_pin_base(&capture_config, self->base_pin);
   sm_config_set_in_pin_count(&capture_config, 16);
-  sm_config_set_in_shift(&capture_config, true, true, 16);
+  sm_config_set_in_shift(&capture_config, false, true, 16);
   sm_config_set_clkdiv(&capture_config, clock_div);
   pio_sm_init(self->pio, self->sm, offset, &capture_config);
-  pio_sm_set_enabled(self->pio, self->sm, true);
 
   // Sets the DMA channel to copy from the PIO to the circular buffer.
+  dma_set_irq0_channel_mask_enabled(1 << self->dma, true);
   dma_channel_config dma_data_config =
       dma_channel_get_default_config(self->dma);
   channel_config_set_read_increment(&dma_data_config, false);
   channel_config_set_write_increment(&dma_data_config, true);
+  channel_config_set_transfer_data_size(&dma_data_config, DMA_SIZE_16);
   channel_config_set_dreq(&dma_data_config,
                           pio_get_dreq(self->pio, self->sm, false));
+#ifdef DEBUG
+  printf("binding to buf: %p\n", self->buf);
+#endif
   dma_channel_configure(self->dma, &dma_data_config, self->buf, self->pio->rxf,
                         dma_encode_transfer_count(transfer_count), true);
-  dma_set_irq0_channel_mask_enabled(1 << self->dma, true);
+
+  // Enable after DMA so we don't use bits to autopush
+  pio_sm_set_enabled(self->pio, self->sm, true);
 }
 
 void cb_stop_buf_population(CircularBuffer *self) {

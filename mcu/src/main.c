@@ -17,6 +17,11 @@ int main() {
   set_sys_clock_hz(PICO_CLOCK_SPEED, true);
   stdio_init_all();
 
+  // Set the LED
+  gpio_init(25);
+  gpio_set_dir_out_masked(1 << 25);
+  gpio_put(25, 1);
+
   // Initialize GPIOS
   for (int i = 8; i < 8 + 15; i++) {
     gpio_init(i);
@@ -29,10 +34,6 @@ int main() {
   gpio_init(5);
   gpio_set_dir_out_masked(1 << 5);
   gpio_put(5, 0);
-
-  gpio_init(28);
-  gpio_set_dir_out_masked(1 << 28);
-  gpio_put(28, 0);
 
   // Initialize the logic analyzer
   LogicAnalyzer la;
