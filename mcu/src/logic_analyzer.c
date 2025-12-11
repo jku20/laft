@@ -67,6 +67,12 @@ void la_arm(LogicAnalyzer *self) {
                              self->trigger_value, self->trigger_config,
                              self->clock_div, self->read_count);
   while (!triggered) {
+#ifdef DEBUG
+    printf("gpio8: %d\n", gpio_get(8));
+    printf("transfer count: %d\n", dma_hw->ch[self->buf.dma].transfer_count);
+    printf("pio pc: %d\n", self->buf.pio->sm[self->buf.sm].addr);
+    printf("pio insn: %x\n", self->buf.pio->sm[self->buf.sm].instr);
+#endif
   }
   triggered = false;
 #ifdef DEBUG
@@ -74,10 +80,12 @@ void la_arm(LogicAnalyzer *self) {
 #endif
   for (int i = 0; i < read_count; i++) {
     uint8_t to_put = self->buf.buf[i];
+#ifndef DEBUG
     putchar(0x00FF & to_put);
     putchar((0xFF00 & to_put) >> 8);
     putchar(0);
     putchar(0);
+#endif
 #ifdef DEBUG
     printf("i: %d\n", i);
     printf("%d%d\n", 0x00FF & self->buf.buf[i], 0xFF00 & self->buf.buf[i]);
@@ -368,8 +376,7 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
   // function in ula, a logic analyzer implemented for the pico.
   //
   // Generate the program for the PIO.
-  pio_sm_set_enabled(self->pio, self->sm, true);
-  pio_sm_restart(self->pio, self->sm);
+  pio_sm_set_enabled(self->pio, self->sm, false);
 
   uint16_t prog[32];
   memset(prog, 0, sizeof prog);
@@ -416,7 +423,7 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
 #endif
         prog[static_pc++] = pio_encode_jmp_x_ne_y(stage_offset);
 #ifdef DEBUG
-        printf("jmp x != y\n");
+        printf("jmp x != y, %d\n", stage_offset);
 #endif
         mask >>= mask_ones;
         value >>= mask_ones;
@@ -463,6 +470,7 @@ void cb_arm_to_start_collecting(CircularBuffer *self,
 
   // Enable after DMA so we don't use bits to autopush
   pio_sm_set_enabled(self->pio, self->sm, true);
+  pio_sm_exec(self->pio, self->sm, pio_encode_jmp(0));
 }
 
 void cb_stop_buf_population(CircularBuffer *self) {
