@@ -54,7 +54,6 @@ def send(cmd_bytes):
     """
     ser.write(cmd_bytes)
     ser.flush()
-    time.sleep(0.1)
 
 
 print("Connected to SUMP device.")
@@ -66,8 +65,8 @@ send(b"\x00")
 # 0x02 = ID
 print("Requesting DEVICE ID...")
 send(b"\x02")
-data = ser.read(4)
-print(data[::-1])
+# data = ser.read(4)
+# print(data[::-1])
 
 
 # Trigger configuration example
@@ -99,8 +98,8 @@ cnt_bytes = sample_count.to_bytes(2, "little")
 print(f"Setting sample count to {sample_count}...")
 send(b"\x81" + cnt_bytes + cnt_bytes)
 
-# print("\nSetting divider to 4...")
-# send(b"\x80\x04\x00\x00\x04")
+print("\nSetting divider to 4...")
+send(b"\x80\x04\x00\x00\x60")
 
 # Set flags
 
@@ -108,16 +107,16 @@ send(b"\x81" + cnt_bytes + cnt_bytes)
 
 # Arm the capture again
 
-print("\nRUN capture...")
-send(b"\x01")
-
-data = ser.read(sample_count * 4)
-c0 = get_channel_n(data, 0)
-pretty_print_waveform(c0)
+# print("\nRUN capture...")
+# send(b"\x01")
+#
+# data = ser.read(sample_count * 4)
+# c0 = get_channel_n(data, 0)
+# pretty_print_waveform(c0)
 
 print("\nTrigger on falling edge")
 # Stage 1 mask
-send(bytes([0xC4, 0x80, 0x00, 0x00, 0x00]))
+send(bytes([0xC4, 0x00, 0x00, 0x00, 0x00]))
 
 # Stage 1 value
 send(bytes([0xC5, 0x00, 0x00, 0x00, 0x00]))
