@@ -63,6 +63,10 @@ img.logo:hover {
     color: #83a598;
 }
 
+code {
+  font-size: 16px !important;
+}
+
 #main div#left_box {
     float: left;
     box-sizing: border-box;
