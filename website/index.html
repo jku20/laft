@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 
-<script>
-  markdown_text = 
-String.raw`
+<!-- In the below script block, write markdown and it will be rendered on the page. -->
+<script id="markdown_text" type='text/markdown'>
 # hello
 content is cool
-${"```"}
+
+```
 // sorry, javascript uses graves for strings for some reason
 // so you need to do this weird dance to get code blocks
 int main() {
   printf("hello world\n");
 }
-${"```"}
-`
+```
 </script>
 
 <head>
@@ -38,6 +37,8 @@ ${"```"}
     </div>
 </body>
 <script>
+markdown_text = document.getElementById("markdown_text").textContent
+
 //   MIT License
 // 
 // Copyright (c) 2025 Fgaoxing
