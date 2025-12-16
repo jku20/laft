@@ -14,7 +14,31 @@ In order to create a logic analyzer that could accommodate a wide range of digit
 2. **Requirement 2:** It should be possible to feed in signals on 8+ channels, and the corresponding GPIO pins should be easily accessible.
 3. **Requirement 3:** The hardware should ideally be able to sample high-frequency signals up to around 100 MHz.
 
-To meet all of the above goals, we opted to design a PCB in Altium. 
+&nbsp;
+
+To meet all of the above goals, we opted to design a PCB in Altium. The board acts as a 
+standalone interface for interacting with the logic analyzer; it contains two 16-pin 
+headers, each of which accommodates 8 high-speed digital signals from 1.8V to 5V, GND 
+connections, and a signal indicating the voltage level (VCCB). One header feeds into level 
+shifter 1 (LS1), which will translate the digital inputs to 3.3V (VCCA) and pass those to 
+GPIO8 through GPIO15. The other header feeds into level shifter 2 (LS2), which does the same 
+but for GPIO16 through GPIO22 (as well as GPIO26). 
+
+Both level shifters can be enabled by driving GPIO5 and GPIO28 (the designated output-enable 
+pins on the RP2350) low. While these level shifters can function bidirectionally, the 
+direction (DIR) pins are hardwired to GND using pull-down resistors, strictly enforcing 
+voltage translation from the headers pins towards the RP2350.
+
+< Put an image of the soldered board here - center it and add a caption, perhaps making 
+mention of the Buddy photos >
+
+The level shifters present on our PCB easily accommodate a number of common logic levels 
+and are able to pass signals up to 100 MHz, allowing us to emulate the behavior of benchtop 
+logic analyzers at a fraction of the cost. Signal integrity is not a major issue here even 
+at high-speed, since we were particular about controlling trace width and keeping trace 
+lengths to a minimum. Other parts our PCB, like the UART debug header, optional external 
+power circuitry, and reset button are other convenience features that further expand 
+functionality for the user.
 
 # Program Design
 < put stuff here >
@@ -44,6 +68,15 @@ To meet all of the above goals, we opted to design a PCB in Altium.
   * < Put work tasks here >
 * **Matthew Hurford** (mlh348)
   * < Put work tasks here>
+
+### Appendix E - References
+* **Datasheets**
+  * [Raspberrry Pi Pico 2 Datasheet](https://datasheets.raspberrypi.com/pico/pico-2-datasheet.pdf)
+  * [Level Shifter Datasheet](https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf?ts=1765867829527)
+* **Code / Designs Borrowed From Others**
+  * < insert any relevant links here >
+* **Background Sites / Papers**
+  * < insert any relevant links here >
 
 ```
 // sorry, javascript uses graves for strings for some reason
