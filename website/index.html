@@ -2,8 +2,48 @@
 
 <!-- In the below script block, write markdown and it will be rendered on the page. -->
 <script id="markdown_text" type='text/markdown'>
-# hello
-content is cool
+# Introduction
+< put stuff here >
+
+# High-Level Design
+< put stuff here >
+
+# Hardware Design
+In order to create a logic analyzer that could accommodate a wide range of digital input signals, three main goals had to be met on the hardware end:
+1. **Requirement 1:** The design needs to be able to accommodate the voltage levels of many common protocols (e.g. 1.8V, 3.3V, 5V) and translate them to 3.3V logic that can be safely input to the RP2350.
+2. **Requirement 2:** It should be possible to feed in signals on 8+ channels, and the corresponding GPIO pins should be easily accessible.
+3. **Requirement 3:** The hardware should ideally be able to sample high-frequency signals up to around 100 MHz.
+
+To meet all of the above goals, we opted to design a PCB in Altium. 
+
+# Program Design
+< put stuff here >
+
+# Results
+< put stuff here >
+
+# Conclusion
+< put stuff here >
+
+# Appendix
+### Appendix A - Permissions
+**Project on Course Page:** The group approves this report for inclusion on the course website.
+**Project on YouTube:** The group did not record a video for inclusion on the course youtube channel.
+
+### Appendix B - Code
+< insert commented C code here >
+
+### Appendix C - Schematics
+< include images of schematics from Altium here >
+
+### Appendix D - Task Distribution
+* **Colin Muessig** (cjm369)
+  * Designed the PCB used for our logic analyzer in Altium
+  * Soldered PCB and debugged faulty behavior; validated logic analyzer at the hardware level (level shifter operation, passage of signals, etc.)
+* **Jeremy Ku-Benjet** (jk2582)
+  * < Put work tasks here >
+* **Matthew Hurford** (mlh348)
+  * < Put work tasks here>
 
 ```
 // sorry, javascript uses graves for strings for some reason
