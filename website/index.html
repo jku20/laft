@@ -10,11 +10,11 @@
 
 # Hardware Design
 In order to create a logic analyzer that could accommodate a wide range of digital input signals, three main goals had to be met on the hardware end:
-1. **Requirement 1:** The design needs to be able to accommodate the voltage levels of many common protocols (e.g. 1.8V, 3.3V, 5V) and translate them to 3.3V logic that can be safely input to the RP2350.
-2. **Requirement 2:** It should be possible to feed in signals on 8+ channels, and the corresponding GPIO pins should be easily accessible.
-3. **Requirement 3:** The hardware should ideally be able to sample high-frequency signals up to around 100 MHz.
-
-&nbsp;
+<ul>
+- **Requirement 1:** The design needs to be able to accommodate the voltage levels of many common protocols (e.g. 1.8V, 3.3V, 5V) and translate them to 3.3V logic that can be safely input to the RP2350.
+- **Requirement 2:** It should be possible to feed in signals on 8+ channels, and the corresponding GPIO pins should be easily accessible.
+- **Requirement 3:** The hardware should ideally be able to sample high-frequency signals up to around 100 MHz.
+</ul>
 
 To meet all of the above goals, we opted to design a PCB in Altium. The board acts as a 
 standalone interface for interacting with the logic analyzer; it contains two 16-pin 
@@ -90,22 +90,19 @@ int main() {
 <head>
     <link rel="stylesheet" href="template.css" type="text/css">
     <link rel="icon" href="favicon.ico">
-    <title>Laft: Logic Analyzer</title>
 </head>
 <body>
-    <div id="side">
-      <div id="icon">
-        <a href="https://ece4760.github.io/"><img src="favicon.ico" alt="logo" width=100 class="logo"></a>
-      </div>
-      <div style="margin-left: 20%;">
-        <br>
-        <a href="https://ece4760.github.io/">ECE 4760/5730 Webpage</a>
-      </div>
     </div>
     <div id="main">
-        <h4>Last Updated 2025-12-12</h4>
+        <div id="title_block">
+          <h1>LAFT Logic Analyzer</h1>
+          <img src="Buddy.jpg" alt="Project mascot (dog)" class="title_photo">
+          <figcaption class="photo_caption">Buddy — Chief Debugging Officer</figcaption>
+          <div class="subtitle">
+            Colin Muessig · Jeremy Ku-Benjet · Matthew Hurford
+          </div>
+    </div>
         <fieldset id="markdown">
-            <legend>Laft: Logic Analyzer</legend>
         </fieldset>
     </div>
 </body>
