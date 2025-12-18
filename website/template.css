@@ -106,6 +106,34 @@ details {
   margin-right: auto;
 }
 
+figure figcaption {
+    text-align: center;
+    font-style: italic;
+    margin-top: 0.4rem;
+}
+
+figure img {
+    border: 1px solid #000;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.column {
+  flex: 1 1 50%;
+  padding: 5px;
+}
+
+.column img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: auto;
+}
+
 /* Title / Header Slop with Buddy */
 
 #title_block {
@@ -124,7 +152,7 @@ details {
 .title_photo {
     display: block;
     margin: 0 auto 14px auto;
-    max-width: 320px;
+    max-width: 280px;
     width: 100%;
     height: auto;
     border-radius: 12px;
@@ -135,4 +163,14 @@ details {
     color: #6b7280;
     font-weight: 500;
     letter-spacing: 0.2px;
+}
+
+#markdown br {
+  content: "";
+  display: block;
+  margin: 0.4rem 0;
+}
+
+#markdown p {
+  margin: 0.4rem 0;
 }
