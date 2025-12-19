@@ -322,7 +322,14 @@ rp2350's state machines.
 # Conclusion
 <hr>
 
-< put stuff here, see course page: https://vanhunteradams.com/Pico/CourseMaterials/Final_Project.html#Final-Report>
+Our design met some expectations and failed others. At a base level, it works as a logic analyzer and can read data
+from high frequency traces using both PulseView and our own GUI. However, we found, as we explain below and above, SUMP
+does not seem to be a protocol well fit for logic analyzers built with the rp2350. This and bugs in our software and,
+we suspect PulseView, make the user experience poor. The user experience in our GUI is much better, though it is
+limited by the GUI itself. In retrospect spending more effort there instead of rewriting our software to support SUMP
+would likely have created a much better user experience.
+
+< add more to the conclusion >
 
 ### Obstacles Faced In Development
 AAA
@@ -340,7 +347,9 @@ AAA
 <br>
 - **Software Problems**
   <ul>
-  - < List software problems here >
+  - **SUMP an Unclear and Unfit Specification**: The specification for SUMP is poor which requird us to read other projects using SUMP and experiment to figure out the specification. After figuring out this specification, we realized some features are difficult to implement fully on the rp2350 and a different protocol may be better suited for the project.
+  - **Inconsitant PIO State Machines**: PIO state machines will sometimes stall waiting for triggers when run multiple times. We have no idea why and no theory to make progress with.
+  - **PulseView Dropping Packets**: We believe PulseView occasionally drops packets causing out sent over data to be corrupted. We found data corruption consistent with this hypothesis when testing with PulseView but could never reproduce similar issues when testing combinations of requestss using our own test script.
   </ul>
 </ul>
 
