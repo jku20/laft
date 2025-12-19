@@ -38,17 +38,22 @@ port it over to another to PulseView for visualization purposes.
 # High-Level Design
 <hr>
 
-< put stuff here, see course page: https://vanhunteradams.com/Pico/CourseMaterials/Final_Project.html#Final-Report >
+Jeremy plans on making a controller adapter in the near future. To that end a logic analyzer is extremely useful for
+debugging erronious logic too and from the adapter as well as figuring out poorly documented protocols. The wires he is
+using range from 3.3v to 5v. Commercial solutions are generally fairly expensive, in the $50 to $1500 range.
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+However, there are many open logic analyzer projects. One we drew much inspiration from was
+[ula](https://github.com/dotcypress/ula), a logic analyzer for the rp2040 partially implementing the SUMP protocol. It
+was made to be used with [PulseView](https://sigrok.org/wiki/PulseView) which we also attempted to support via similar
+means. We additionally wrote our own GUI in addition to PulseView which took inspiration from
+[can-explorer](https://github.com/Tbruno25/can-explorer) which connected to the logic analyzer flashed with different
+software built as a vendor specific USB device communicating with our own protocol. We are not aware of other projects
+built on Rasberry Pis which do something similar.
+
+There are three parts to the software of this project. For our Pico 2, we created firmware to let the device be used as
+a vendor specific USB device, software to connect to the logic analyzer when using this firmware, and firmware to let
+the device connect over the serial port to the PulseView logic analyzer software using the
+[SUMP protocol](https://sump.org/projects/analyzer/protocol/).
 
 <hr>
 # Hardware Design
@@ -117,12 +122,9 @@ functionality for the user.
 <hr>
 # Program Design
 <hr>
-
-There are three parts to the software of this project. For our logic analyzer, we created firmware to let the device be
-used as a vendor specific USB device, software to connect to the logic analyzer when using this firmware, and firmware
-to let the device connect over the serial port to the [PulseView](https://sigrok.org/wiki/PulseView) logic analyzer
-software using the [SUMP protocol](https://sump.org/projects/analyzer/protocol/). We will go over each of these sub
-projects separatly as follows.
+We will enumerate the three separate software projects composing our logic analyzer. We start with the firmware and
+software connecting as a vendor specific USB device and then follow with the firmware connecting as a virtual serial
+port to PulseView.
 
 ## USB Logic Analyzer
 The firmware does not depend on any third party libraries, such as TinyUSB, when interfacing with the USB periferal,
