@@ -219,6 +219,87 @@ The UI is simple. Due to time constraints, it doesn't support trigger requests o
 However, the live display alone was quite helpful and we found ourselves reaching first to this prototype when
 debugging our other firmware (described below).
 
+## SUMP Logic Analyzer
+After writing the GUI above, we noticed there exists open logic analyzer software we could attempt to support, namely,
+PulseView, part of the larger (sigrok)[https://sigrok.org] project. PulseView supports many different logical analyzer
+protocols, but we chose to partially implement the SUMP protocol due to its simplicitly. In our discussion of SUMP we
+will omit details we do not implement or not relevant to our discussion. This would be a good place to link to a proper
+description of the protocol, but I am not aware on one which exists. The original spec is ill defined, and most sources
+I found simply copy the original spec word for word. 
+
+SUMP is built around triggers. The logic analyzer software first sends the logic analyzer up to four pairs of 32 bit
+bitstrings. Each pair is composed of a trigger mask and a trigger value. SUMP has two modes, serial mode and parallel
+mode, of which we support parallel mode. In parallel mode, when the logic analyzer is armed, it tries to match each
+pair of trigger value and mask in order. To match a pair, each trace is read at the same time. The ith trace is
+compared to the ith bit in the trigger value. If they compare equal or the ith bit of the trigger mask is zero, the
+bits are said to match, else they do not match. If every trace matches every trigger value, then the next pair of
+trigger value and trigger mask attempts to be matched against. Otherwise, the program must try and match the current
+pair again (it does not forget about previous matched pairs). Once all pairs are matched, the logic analyzer will begin
+reading the number of samples requested of it.
+
+The most difficult part of implementing this is supporting the variable trigger conditions while maintaining speed when
+reading from the traces. To do this, we
+[base our implementation on ula's trigger logic](https://github.com/dotcypress/ula/blob/40756c4199c9f2ac605a39bfed2eddcc7fe0324b/src/trigger.rs),
+a Rust implementation of a SUMP based logic analyzer. In particular, we generate PIO programs at runtime based on the
+trigger masks and trigger values received from the logic analyzer software. 
+```
+for (int i = 0; i < NUM_STAGES; i++) {
+  int stage_offset = static_pc;
+  if (bitset_is_empty(&trigger_mask[i])) {
+    continue;
+  }
+
+  uint32_t mask = bitset_get_raw(&trigger_mask[i]);
+  uint32_t value = bitset_get_raw(&trigger_value[i]);
+
+  prog[static_pc++] = pio_encode_mov_reverse(pio_osr, pio_pins);
+  while (mask) {
+    int mask_zeros = trailing_zeros(mask);
+    if (mask_zeros) {
+      prog[static_pc++] = pio_encode_out(pio_null, mask_zeros);
+      mask >>= mask_zeros;
+      value >>= mask_zeros;
+    }
+    int mask_ones = MIN(trailing_ones(mask), 5);
+    if (mask_ones) {
+      prog[static_pc++] = pio_encode_out(pio_x, mask_ones);
+      prog[static_pc++] =
+          pio_encode_set(pio_y, value & ((1 << mask_ones) - 1));
+      prog[static_pc++] = pio_encode_jmp_x_ne_y(stage_offset);
+      mask >>= mask_ones;
+      value >>= mask_ones;
+    }
+  }
+}
+
+prog[static_pc++] = pio_encode_in(pio_pins, 16);
+```
+We generate one PIO program from all four value mask pairs. Each pair gets a section of the program which starts with a
+read, then checks the read bits, and then either branches back to the initial read or falls through to the next section
+for the program. Concretely, each section starts with a `mov` instruction from the pins to the output status register.
+The program then differs based on the mask. For every zero in the mask, the program inserts an `out` instruction
+shifting one bit from the pin read stored in the osr into null. For every one in the mask, the program uses an `out`
+instruction to shift a one bit into the x scratch register. It then uses a `set` intruction to set the y scratch
+register to the corresponding bit of the trigger value. If these bits compare equal, the program falls through to
+the next comparison, else it jumps to to the begining of that pair's section. If there are no more comparison, the
+program falls through to the next pair's section or simply to the loop reading data from the pins to the isr.
+
+This technique has a few pitfalls. It takes a variable number of cycles to do each trigger check, and the amount of
+cycles it takes to perform a trigger check is significantly longer than the cycles it takes to read from the pins.
+The means some data is lost from between when the trigger matches the trace data and when the logic analyzer begins to
+poll the traces. We found this to be visible when polling high frequency signals. We believe this is a fundemental
+limitation of using the PIO state machines as they cannot perform large bitwise operations letting us account for the
+trigger mask. In addition, it's possible for the generated PIO programs to exceed the 32 instructions. We similarly
+do not have a solution and believe this too is a fudamental limitation of attempting to use a single PIO state machine.
+Using multiple state machines additionally doesn't work because they would have to communicate in a cycle precise level
+to maintain the speed we have. It may be possible to get close using a DMA channels to transfer bits between the state
+machines' FIFOs, but this doesn't have the same consistant, precise timing guarentee that having the program on a
+single PIO state machine gives, exasterbating the first problem.
+
+Overall, though, we found this technique functional and the only way we found or could think of to conform to SUMP.
+The evaluation above suggests it may simply be SUMP is too complex a protocol to be able to effectively support on the
+rp2350's sstate machines.
+
 <hr>
 # Results
 <hr>
