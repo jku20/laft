@@ -190,6 +190,19 @@ Once the PIO state machine goes into a loop reading data, a DMA channel will get
 output buffer. When the amount of request data fills the buffer, the DMA channel ceases transfering data and the state
 machine is stopped. The data from the buffer is then queue to be sent to the host.
 
+### Logic Analyzer GUI
+We created a GUI for our logic analyzer in Python using [DearPyGui](https://github.com/hoffstadt/DearPyGui) and
+[pyusb](https://github.com/pyusb/pyusb). The GUI's main purpose is for live monitoring the logic analyzer's traces.
+The GUI starts a render thread and a polling thread. The render thread draws the current buffer to the screen every
+frame and handles user interaction. The polling thread periodically sends trace requests to the logic analyzer and
+updates the render thread's data with the responses.
+
+< Add some image here of the ui>
+
+The UI is simple. Due to time constraints, it doesn't support trigger requests or fancy analysis of the waveforms.
+However, the live display alone was quite helpful and we found ourselves reaching first to this prototype when
+debugging our other firmware (described below).
+
 <hr>
 # Results
 <hr>
