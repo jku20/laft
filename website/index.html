@@ -136,6 +136,40 @@ functionality for the user.
 
 < put stuff here, see course page: https://vanhunteradams.com/Pico/CourseMaterials/Final_Project.html#Final-Report>
 
+### Obstacles Faced In Development
+AAA
+<ul>
+- **Hardware Problems**
+  <ul>
+  - **Short Circuits and Faulty Power-Up:** at some point during the development process, one of the level shifters that was soldered to our PCB experienced internal damage; when 5V signals were then fed into the input pins and the corresponding rail was driven to 5V, lots of odd behavior ensued. The output-enable pin was forced high despite the Pico actively trying to drive the pin low, preventing any signals from being level shifted. Furthermore, the 3.3V rail (connected directly to the Pico) was forced above 4V. This eventually resulted in the Pico failing to power up, breaking all flashing functionality and forcing our team to solder an entirely new PCB.
+  - **Fabrication Issues:** when first ordering our boards, we encountered fabrication issues having to do with the open-source Altium footprints we took from Ultra Librarian online. The level shifters in particular had a number of problems with solder pads. On top of the pads for each pin missing soldermask (which caused a hold-up in fabrication on the order of several days), the footprint also contained "ghost pads" which should have never been placed on the board. These were not caught until after boards came in, although these did not prove to be much of an issue as long as caution was taken while soldering.
+  </ul>
+<br>
+<figure>
+  <img src="logicanalyzer-faultypad.png" alt="fabrication issue" style="max-width: 40%; height: auto; display:block; margin:auto;">
+  <figcaption>Example of a fabrication issue w/ floating pads</figcaption>
+</figure>
+<br>
+- **Software Problems**
+  <ul>
+  - < List software problems here >
+  </ul>
+</ul>
+
+<br>
+<br>
+<br>
+  
+### Intellectual Property Considerations
+< put stuff here, see course page: https://vanhunteradams.com/Pico/CourseMaterials/Final_Project.html#Final-Report>
+
+<br>
+<br>
+<br>
+
+### Further Improvements
+< put stuff here, see course page: https://vanhunteradams.com/Pico/CourseMaterials/Final_Project.html#Final-Report>
+
 <br>
 <br>
 <br>
@@ -258,7 +292,11 @@ functionality for the user.
   <br>
   - **Code / Designs Borrowed From Others**
   <ul>
-  - < insert any relevant links here >
+  - [Level Shifter Altium Footprint](https://app.ultralibrarian.com/details/165e9ff7-103f-11e9-ab3a-0a3560a4cccc/Texas-Instruments/SN74LVC8T245DBR?uid=668960&exports=41&open=exports)
+  - [Raspberry Pi Pico 2 Altium Footprint](https://github.com/amgsus/RPi-Pico-Altium)
+  - [16-Pin Header Altium Footprint](https://app.ultralibrarian.com/details/edb9d735-103e-11e9-ab3a-0a3560a4cccc/TE-Connectivity/5102153-3?uid=39437029)
+  - [3-Pin Header Altium Footprint](https://app.ultralibrarian.com/details/425a797b-1081-11e9-ab3a-0a3560a4cccc/Samtec-Inc/TSW-103-15-T-S?uid=12085636)
+  - [2-Pin Header Altium Footprint](https://app.ultralibrarian.com/details/42530aaf-1081-11e9-ab3a-0a3560a4cccc/Samtec-Inc/TSW-102-06-S-S?uid=271997)
   </ul>
   <br>
 - **Background Sites / Papers**

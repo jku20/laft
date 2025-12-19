@@ -175,3 +175,7 @@ figure img {
 #markdown p {
   margin: 0.4rem 0;
 }
+
+#markdown li {
+  margin-bottom: 0.5rem;
+}
