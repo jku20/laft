@@ -120,6 +120,10 @@ figure img {
     border: 0px solid #000;
 }
 
+#wiredboardandGUI {
+    border: 0px solid #000;
+}
+
 .row {
   display: flex;
   justify-content: center;
