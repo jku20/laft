@@ -44,10 +44,17 @@ using range from 3.3v to 5v. Commercial solutions are generally fairly expensive
 However, there are many open logic analyzer projects. One we drew much inspiration from was
 [ula](https://github.com/dotcypress/ula), a logic analyzer for the rp2040 partially implementing the SUMP protocol. It
 was made to be used with [PulseView](https://sigrok.org/wiki/PulseView) which we also attempted to support via similar
-means. We additionally wrote our own GUI in addition to PulseView which took inspiration from
-[can-explorer](https://github.com/Tbruno25/can-explorer) which connected to the logic analyzer flashed with different
-software built as a vendor specific USB device communicating with our own protocol. We are not aware of other projects
-built on Rasberry Pis which do something similar.
+means. Doing this meant we did not need to write a GUI ourselves, however it forced us to comply with the SUMP protocol,
+which during implementation we realized felt like a poor fit for the rp2350's hardware.
+
+Especially early in the project, we found it useful to write our own GUI in addition to PulseView. It took inspiration
+from [can-explorer](https://github.com/Tbruno25/can-explorer) and connected to the logic analyzer flashed with different
+firmware. For this GUI, the pico connected as a vendor specific USB device communicating with our own protocol. We are
+not aware of other projects built on Rasberry Pis which do something similar. This gave us full control over the GUI so
+we could choose what to support and what not to as well as letting us create a protocol made specifically for the
+rp2350. The tradeoff is specifying a protocol and creating a GUI is a lot of work. We additionally found TinyUSB seemed
+to have flakey support for vendor specific USB devices (at least we couldn't figure it out) so we used the rp2350's USB
+peripheral directly. As with the above, the tradeoff was additional work for a more reliable design.
 
 There are three parts to the software of this project. For our Pico 2, we created firmware to let the device be used as
 a vendor specific USB device, software to connect to the logic analyzer when using this firmware, and firmware to let
