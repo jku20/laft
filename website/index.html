@@ -323,16 +323,15 @@ rp2350's state machines.
 <hr>
 
 Our design met some expectations and failed others. At a base level, it works as a logic analyzer and can read data
-from high frequency traces using both PulseView and our own GUI. However, we found, as we explain below and above, SUMP
-does not seem to be a protocol well fit for logic analyzers built with the rp2350. This and bugs in our software and,
-we suspect PulseView, make the user experience poor. The user experience in our GUI is much better, though it is
-limited by the GUI itself. In retrospect spending more effort there instead of rewriting our software to support SUMP
-would likely have created a much better user experience.
-
-< add more to the conclusion >
+from high frequency traces using both PulseView and our own GUI. However, we found that SUMP
+does not seem to be a protocol well fit for logic analyzers built with the RP2350. When you also account for bugs in our software and
+possibly even bugs in PulseView, the user experience did not meet expectations. The user experience in our homemade GUI is much better, though it is
+limited by the GUI itself. In retrospect, spending more effort there instead of rewriting our software to support SUMP
+would likely have created a much better user experience but may have limited its compatibility with existing logic analyzer tools.
 
 ### Obstacles Faced In Development
-AAA
+There were a number of issues we encountered throughout the development process that hindered progress or which limit the operation of the
+final design. Here, we detail some of those issues, split between hardware and software:
 <ul>
 - **Hardware Problems**
   <ul>
@@ -347,9 +346,9 @@ AAA
 <br>
 - **Software Problems**
   <ul>
-  - **SUMP an Unclear and Unfit Specification**: The specification for SUMP is poor which requird us to read other projects using SUMP and experiment to figure out the specification. After figuring out this specification, we realized some features are difficult to implement fully on the rp2350 and a different protocol may be better suited for the project.
-  - **Inconsitant PIO State Machines**: PIO state machines will sometimes stall waiting for triggers when run multiple times. We have no idea why and no theory to make progress with.
-  - **PulseView Dropping Packets**: We believe PulseView occasionally drops packets causing out sent over data to be corrupted. We found data corruption consistent with this hypothesis when testing with PulseView but could never reproduce similar issues when testing combinations of requestss using our own test script.
+  - **SUMP an Unclear and Unfit Specification**: the specification for SUMP is relatively poor, which required us to read other projects using SUMP and experiment to figure out the specification. After figuring out this specification, we realized some features are difficult to implement fully on the RP2350 and a different protocol may have been better suited for the project.
+  - **Inconsistent PIO State Machines**: PIO state machines will sometimes stall waiting for triggers when run multiple times. We never figured out the reason for this even after talking with professors, and have no real working theory to go off of.
+  - **PulseView Dropping Packets**: we believe PulseView occasionally drops packets, causing data being sent over to be corrupted. We found data corruption consistent with this hypothesis when testing with PulseView but could never reproduce similar issues when testing combinations of requests using our own test script.
   </ul>
 </ul>
 
@@ -2663,14 +2662,16 @@ struct usb_endpoint_descriptor_long {
   <br>
   - **Jeremy Ku-Benjet** (jk2582)
   <ul> 
-  - Implemented SUMP trigger logic and protocol parsing.
-  - Implemented GUI.
-  - Implemented vendor specific USB device firmware. 
+  - Implemented SUMP trigger logic and protocol parsing
+  - Implemented GUI
+  - Implemented vendor-specific USB device firmware
   </ul>
   <br>
 - **Matthew Hurford** (mlh348)
   <ul>
-  - < Put work tasks here>
+  - Wrote test cases in software to comprehensively test logic analyzer functionality
+  - Debugged a number of major SUMP issues
+  - Assisted in trace routing and SMD soldering
   </ul>
 </ul>
 
