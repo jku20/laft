@@ -6,7 +6,24 @@
   # Introduction
 <hr>
 
-< put stuff here, see course page: https://vanhunteradams.com/Pico/CourseMaterials/Final_Project.html#Final-Report >
+<div class="quote">
+  Why spend $500 on lab equipment when you can build it for the price of a Big Mac?
+</div>
+
+**Project:** LAFT is a 16-channel logic analyzer built with the RP2350 microcontroller capable of sampling
+signals up to 100 MHz. The analyzer uses the Pico 2 PIO state machine to capture the logic values of 16
+GPIO pins simultaneously on every microcontroller CLK cycle. We also designed a custom PCB for the device
+with 8-channel header pins on each side. Furthermore, each channel connects to one of two level-shifters,
+which convert an input logic level between 1.8 and 5V to the 3.3V required by the RP2350. Our logic analyzer
+is compatible with the open-source SUMP protocol, so tools such as PulseView can be used with LAFT. 
+
+**Motivation:** Traditional electrical measurement tools are a significant cost for any electrical lab.
+Complex logic analyzers typically cost hundreds to thousands of dollars. Assuming bulk part orders, we
+are building a functional analyzer for just ~$10. This device would be one or two orders of magnitude
+cheaper than consumer options, acting as a powerful, cost-effective alternative that is easily replicable.
+The inclusion of the SUMP interface will make it extremely simple to gather data with the logic analyzer and
+port it over to another to PulseView for visualization purposes. 
+
 
 <br>
 <br>

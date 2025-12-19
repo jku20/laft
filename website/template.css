@@ -170,6 +170,61 @@ figure img {
     letter-spacing: 0.2px;
 }
 
+.quote {
+  /* layout */
+  text-align: center;
+  margin: 0 auto;
+  max-width: 30ch;
+
+  /* typography */
+  font-family: "Impact", "Arial Black", sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+
+  /* rainbow gradient */
+  background: linear-gradient(
+    90deg,
+    red,
+    orange,
+    yellow,
+    lime,
+    cyan,
+    blue,
+    magenta,
+    red
+  );
+  background-size: 400% 100%;
+
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  /* strobe animation */
+  animation:
+    rainbow-shift 0.6s linear infinite,
+    strobe 0.12s steps(1) infinite;
+
+  /* extra chaos */
+  text-shadow:
+    0 0 8px rgba(255,255,255,0.6),
+    0 0 16px rgba(255,255,255,0.4);
+}
+
+/* rainbow motion */
+@keyframes rainbow-shift {
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+/* strobe flicker */
+@keyframes strobe {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.85; }
+  100% { opacity: 1; }
+}
+
+
 #markdown br {
   content: "";
   display: block;
