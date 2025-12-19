@@ -7,7 +7,7 @@ html {
 
 body {
     font-family: 'Helvetica', 'Arial', sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     background-color: #ffffff;
     display: block;
     gap: 0;
@@ -65,7 +65,7 @@ img.logo:hover {
 }
 
 code {
-  font-size: 16px !important;
+  font-size: 14px !important;
 }
 
 #main div#left_box {
@@ -124,12 +124,13 @@ figure img {
 
 .column {
   flex: 1 1 50%;
-  padding: 5px;
+  padding-left: 5px;
 }
 
 .column img {
   max-width: 100%;
-  height: auto;
+  height: 250px;
+  width: auto;
   display: block;
   margin: auto;
 }
@@ -159,7 +160,7 @@ figure img {
 }
 
 .subtitle {
-    font-size: 20px;
+    font-size: 18px;
     color: #6b7280;
     font-weight: 500;
     letter-spacing: 0.2px;

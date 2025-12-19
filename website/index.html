@@ -73,6 +73,13 @@ voltage translation from the headers pins towards the RP2350.
   </div>
 </div> 
 
+<br>
+
+<figure>
+  <img src="logicanalyzer-fullschematic.png" alt="fullschematic" style="max-width: 100%; height: auto; display:block; margin:auto;">
+  <figcaption>Full schematic of logic analyzer PCB (for higher resolution screenshots, see Appendix C)</figcaption>
+</figure>
+
 The level shifters present on our PCB easily accommodate a number of common logic levels 
 and are able to pass signals up to 100 MHz, allowing us to emulate the behavior of benchtop 
 logic analyzers at a fraction of the cost. Signal integrity is not a major issue here even 
@@ -155,8 +162,6 @@ functionality for the user.
 <br>
 <br>
 <br>
-<br>
-<br>
 
 <hr>
 ### Appendix B - Code
@@ -171,17 +176,37 @@ functionality for the user.
 <br>
 <br>
 <br>
-<br>
-<br>
 
 <hr>
 ### Appendix C - Schematics
 <hr>
 
-< include images of schematics from Altium here >
+<figure>
+  <img src="logicanalyzer-fullschematic.png" alt="fullschematic" style="max-width: 80%; height: auto; display:block; margin:auto;">
+  <figcaption>Full schematic of logic analyzer PCB</figcaption>
+</figure>
 
 <br>
+
+<figure>
+  <img src="logicanalyzer-RP2350.png" alt="RP2350 circuit" style="max-width: 70%; height: auto; display:block; margin:auto;">
+  <figcaption>RP2350 connections for the logic analyzer</figcaption>
+</figure>
+
 <br>
+
+<figure>
+  <img src="logicanalyzer-levelshifters.png" alt="Level shifter circuit" style="max-width: 70%; height: auto; display:block; margin:auto;">
+  <figcaption>Level shifter circuit for the logic analyzer</figcaption>
+</figure>
+
+<br>
+
+<figure>
+  <img src="logicanalyzer-headers.png" alt="Header circuit" style="max-width: 70%; height: auto; display:block; margin:auto;">
+  <figcaption>Headers on the PCB</figcaption>
+</figure>
+
 <br>
 <br>
 <br>
@@ -200,18 +225,18 @@ functionality for the user.
   - Designed the PCB used for our logic analyzer in Altium
   - Soldered PCB and debugged faulty behavior; validated logic analyzer at the hardware level (level shifter operation, passage of signals, etc.)
   </ul>
+  <br>
   - **Jeremy Ku-Benjet** (jk2582)
   <ul> 
   - < Put work tasks here > 
   </ul>
+  <br>
 - **Matthew Hurford** (mlh348)
   <ul>
   - < Put work tasks here>
   </ul>
 </ul>
 
-<br>
-<br>
 <br>
 <br>
 <br>
@@ -230,14 +255,17 @@ functionality for the user.
   - [Raspberry Pi Pico 2 Datasheet](https://datasheets.raspberrypi.com/pico/pico-2-datasheet.pdf)
   - [Level Shifter Datasheet](https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf?ts=1765867829527)
   </ul>
+  <br>
   - **Code / Designs Borrowed From Others**
   <ul>
   - < insert any relevant links here >
   </ul>
+  <br>
 - **Background Sites / Papers**
   <ul>
   - < insert any relevant links here >
   </ul>
+  <br>
 </ul>
 
 <br>
@@ -256,12 +284,15 @@ functionality for the user.
         <div id="title_block">
           <h1>LAFT Logic Analyzer</h1>
           <h2>ECE 4760/5730 Final Project</h2>
-          <img src="Buddy2.jpg" alt="Project mascot (dog)" class="title_photo">
-          <figcaption class="photo_caption">Buddy — Chief Debugging Officer</figcaption>
           <br>
           <div class="subtitle">
             Colin Muessig (cjm369) · Jeremy Ku-Benjet (jk2582) · Matthew Hurford (mlh348)
           </div>
+          <br>
+          <figure>
+            <img src="BuddyCombo.png" alt="Project mascot (dog)" style="max-width: 70%; height: auto; display:block; margin:auto;">
+          </figure>
+          <figcaption class="photo_caption">Buddy — Chief Debugging Officer</figcaption>
     </div>
         <fieldset id="markdown">
         </fieldset>
