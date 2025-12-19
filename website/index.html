@@ -128,7 +128,7 @@ port to PulseView.
 
 ## USB Logic Analyzer
 The firmware does not depend on any third party libraries, such as TinyUSB, when interfacing with the USB periferal,
-however, it uses siginficant code from the [dev_lowlevel](https://github.com/raspberrypi/pico-examples/tree/4c3a3dc0196dd426fddd709616d0da984e027bab/usb/device/dev_lowlevel)
+however, it uses siginficant code from the [dev lowlevel](https://github.com/raspberrypi/pico-examples/tree/4c3a3dc0196dd426fddd709616d0da984e027bab/usb/device/dev_lowlevel)
 example for listening and responding to transfers from the USB host. Concretely, use logic from the example to receive
 transfers from the host and then call a handler. Our responses are composed of multiple transfers so we wrote a request
 queue. This is implemented as a fixed sized FIFO built around a circular buffer. When the logic analyzer needs to send
