@@ -5,7 +5,7 @@
 <hr>
   # Introduction
 <hr>
-<marquee class="quote">Why spend $500 on lab equipment when you can build it for the price of a Big Mac?</marquee>
+<marquee scrollamount="20" class="quote">Why spend $500 on lab equipment when you can build it for the price of a Big Mac?</marquee>
 
 
 
@@ -399,6 +399,7 @@ AAA
 <hr>
 
 ```
+<pre><code>
 ./laft/main.py
 import argparse
 import queue
@@ -733,7 +734,8 @@ def main():
 
 if __name__ == "__main__":
     main()
-
+</code></pre>
+<pre><code>
 ./laft/serial_debug.py
 import serial
 import time
@@ -870,7 +872,8 @@ pretty_print_waveform(c0)
 
 print("\nDone.")
 ser.close()
-
+</code></pre>
+<pre><code>
 ./mcu/src/bitset.c
 #include "bitset.h"
 #include <stdbool.h>
@@ -891,7 +894,8 @@ bool bitset_get(Bitset32 *self, int idx) {
 uint32_t bitset_get_raw(Bitset32 *self) { return self->data; }
 
 bool bitset_is_empty(Bitset32 *self) { return self->data == 0; }
-
+</code></pre>
+<pre><code>
 ./mcu/src/logic_analyzer.c
 #include <hardware/dma.h>
 #include <hardware/pio.h>
@@ -1375,7 +1379,8 @@ void cb_stop_buf_population(CircularBuffer *self) {
 void cb_start_buf_population(CircularBuffer *self) {
   pio_sm_set_enabled(self->pio, self->sm, true);
 }
-
+</code></pre>
+<pre><code>
 ./mcu/src/main.c
 #include "debug.h"
 #include <hardware/dma.h>
@@ -1472,9 +1477,10 @@ read:
 .wrap_target
   in pins, 16
 .wrap
+</code></pre>
 
-Other MCU code
-
+(Other MCU code)
+<pre><code>
 ./mcu/src/request_queue.c
 #include "request_queue.h"
 #include <stdbool.h>
@@ -1530,7 +1536,8 @@ void push_queue(request_queue *q, struct usb_endpoint_configuration *ep,
                 uint8_t *buf, uint16_t len);
 request *pop_front_queue(request_queue *q);
 bool is_empty_queue(request_queue *q);
-
+</code></pre>
+<pre><code>
 ./mcu/src/main.c
 /**
  * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
@@ -2328,7 +2335,8 @@ int main(void) {
     tight_loop_contents();
   }
 }
-
+</code></pre>
+<pre><code>
 ./mcu/include/usb.h
 /**
  * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
@@ -2464,7 +2472,8 @@ static const unsigned char *descriptor_strings[] = {
 };
 
 #endif
-
+</code></pre>
+<pre><code>
 ./mcu/include/usb_common.h
 /*
  * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
@@ -2601,6 +2610,7 @@ struct usb_endpoint_descriptor_long {
 
 #endif
 ```
+</code></pre>
 
 <hr>
 ### Appendix C - Schematics
@@ -2690,11 +2700,16 @@ struct usb_endpoint_descriptor_long {
   - [16-Pin Header Altium Footprint](https://app.ultralibrarian.com/details/edb9d735-103e-11e9-ab3a-0a3560a4cccc/TE-Connectivity/5102153-3?uid=39437029)
   - [3-Pin Header Altium Footprint](https://app.ultralibrarian.com/details/425a797b-1081-11e9-ab3a-0a3560a4cccc/Samtec-Inc/TSW-103-15-T-S?uid=12085636)
   - [2-Pin Header Altium Footprint](https://app.ultralibrarian.com/details/42530aaf-1081-11e9-ab3a-0a3560a4cccc/Samtec-Inc/TSW-102-06-S-S?uid=271997)
-  </ul>
+  - [dev_lowlevel Example Code](https://github.com/raspberrypi/pico-examples/tree/4c3a3dc0196dd426fddd709616d0da984e027bab/usb/device/dev_lowlevel)
+  - [DearPyGUI](https://github.com/hoffstadt/DearPyGui)
+  - [pyusb](https://github.com/pyusb/pyusb)
+  - [Micro Logic Analyzer on RP2040](https://github.com/dotcypress/ula)
+  - [can-explorer Visualization Tool](https://github.com/Tbruno25/can-explorer)
+</ul>
   <br>
 - **Background Sites / Papers**
   <ul>
-  - < insert any relevant links here >
+  - [SUMP Protocol](https://sump.org/projects/analyzer/protocol/)
   </ul>
   <br>
 </ul>
