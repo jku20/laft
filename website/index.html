@@ -332,17 +332,20 @@ rp2350's state machines.
 # Results
 <hr>
 
-< put stuff here, see course page: https://vanhunteradams.com/Pico/CourseMaterials/Final_Project.html#Final-Report >
+Our design achieved polling traces once per cycle. With overclocking, this amounted to polling at 300MHz. However, we
+were unable to bring this same guarentee to trigger detection. Hardcoded assembly programs let edge triggers begin
+polling the cycle after a trigger is detected, and they started detecting triggers at worst once every three cycles.
+Using three out of phase state machines this could be improved to be cycle precise. However, we were not able to provide
+the same guarentees for the more complicated trigger conditions required by SUMP. The runtime assembly generator
+creates programs which run in variable time based on the trigger condition. In the case of a rising edge triggr on a
+single trace, it lead to a delay of four cycle between detecting the trigger condition and starting collecting data.
+This gets worse for more complicated trigger conditons. In practice this meant we could collect good data from traces
+less than around 50MHz for simple SUMP trigger conditions, and roughtly 100MHz for simple edge trigger conditions.
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+Our design mangaged to correctly interpret voltages from 1.8v to 5.0v. On usability, our design's hot path, plugging it
+in followed by starting and then detecting a trigger, worked well on unix-like systems. It could simply be plugged in,
+the relevant software could be started up (either our GUI or PulseView) and the design would simply work. Usability was
+poor in colder paths such as missed traces or disconnecting from the UI. These often requried restarting the design.
 
 <hr>
 # Conclusion
