@@ -369,20 +369,29 @@ rp2350's state machines.
 # Results
 <hr>
 
+< INCLUDE VISUALS HERE >
+
 Our design achieved polling traces once per cycle. With overclocking, this amounted to polling at 300MHz. However, we
-were unable to bring this same guarentee to trigger detection. Hardcoded assembly programs let edge triggers begin
+were unable to bring this same guarantee to trigger detection; hardcoded assembly programs let edge triggers begin
 polling the cycle after a trigger is detected, and they started detecting triggers at worst once every three cycles.
 Using three out of phase state machines this could be improved to be cycle precise. However, we were not able to provide
 the same guarentees for the more complicated trigger conditions required by SUMP. The runtime assembly generator
-creates programs which run in variable time based on the trigger condition. In the case of a rising edge triggr on a
+creates programs which run in variable time based on the trigger condition. In the case of a rising edge trigger on a
 single trace, it lead to a delay of four cycle between detecting the trigger condition and starting collecting data.
 This gets worse for more complicated trigger conditons. In practice this meant we could collect good data from traces
 less than around 50MHz for simple SUMP trigger conditions, and roughtly 100MHz for simple edge trigger conditions.
 
-Our design mangaged to correctly interpret voltages from 1.8v to 5.0v. On usability, our design's hot path, plugging it
-in followed by starting and then detecting a trigger, worked well on unix-like systems. It could simply be plugged in,
-the relevant software could be started up (either our GUI or PulseView) and the design would simply work. Usability was
-poor in colder paths such as missed traces or disconnecting from the UI. These often requried restarting the design.
+Our logic analyzer design is able to reliably interpret voltages from 1.8V to 5.0V and convert them to 3.3V logic for the Pico, indicating good
+accuracy at the hardware level.
+
+Safety was not a major concern for the hardware used in this project, as it is relatively low-power. There was just one small safety consideration
+made in designing the optional external power circuit, as a Schottky diode was included (in accordance with the Pico 2 datasheet) as a diode-OR between
+external battery power (into VSYS) and on-board power (VBUS). This essentially serves as protection to prevent back-powering from one to the other.
+
+For usability, the logic analyzer is very accommodating to unix-like systems. It could simply be plugged in,
+the relevant software could be started up (either our GUI or PulseView) and the design would simply work. Usability is
+limited by software limitations mentioned earlier like missed traces or disconnecting from the UI. These often required restarting the design to return
+to stable operation.
 
 <br>
 <br>
