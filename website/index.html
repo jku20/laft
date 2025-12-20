@@ -389,7 +389,16 @@ All code other than that taken from examples online were written by members of o
 # Results
 <hr>
 
-< INCLUDE VISUALS HERE >
+At a high level, the logic analyzer we designed met its baseline goal of interpreting digital signals well into the MHz range and
+rendering that on a GUI supporting burst capture.
+
+<figure>
+    <img src="logicanalyzer_oldGUIsmall.png" id="oldGUIsmall" alt="oldGUIsmall" style="max-width: 70%; height: auto; display:block; margin:auto;">
+  </figure>
+  <figure>
+    <img src="logicanalyzer_GUI.png" id="newGUI" alt="newGUI" style="max-width: 70%; height: auto; display:block; margin:auto;">
+    <figcaption>Our team's custom GUI (top) and PulseView (bottom), both compatible with laft</figcaption>
+  </figure>
 
 Our design achieved polling traces once per cycle. With overclocking, this amounted to polling at 300MHz. However, we
 were unable to bring this same guarantee to trigger detection; hardcoded assembly programs let edge triggers begin
@@ -399,9 +408,9 @@ the same guarentees for the more complicated trigger conditions required by SUMP
 creates programs which run in variable time based on the trigger condition. In the case of a rising edge trigger on a
 single trace, it lead to a delay of four cycle between detecting the trigger condition and starting collecting data.
 This gets worse for more complicated trigger conditons. In practice this meant we could collect good data from traces
-less than around 50MHz for simple SUMP trigger conditions, and roughtly 100MHz for simple edge trigger conditions.
+less than around 50MHz for simple SUMP trigger conditions, and roughly 100MHz for simple edge trigger conditions.
 
-Our logic analyzer design is able to reliably interpret voltages from 1.8V to 5.0V and convert them to 3.3V logic for the Pico, indicating good
+Our logic analyzer design is able to reliably pass signals from 1.8V to 5.0V and convert them to 3.3V logic for the Pico, indicating good
 accuracy at the hardware level.
 
 Safety was not a major concern for the hardware used in this project, as it is relatively low-power. There was just one small safety consideration
