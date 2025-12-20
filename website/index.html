@@ -347,6 +347,16 @@ in followed by starting and then detecting a trigger, worked well on unix-like s
 the relevant software could be started up (either our GUI or PulseView) and the design would simply work. Usability was
 poor in colder paths such as missed traces or disconnecting from the UI. These often requried restarting the design.
 
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
 <hr>
 # Conclusion
 <hr>
@@ -357,6 +367,10 @@ does not seem to be a protocol well fit for logic analyzers built with the RP235
 possibly even bugs in PulseView, the user experience did not meet expectations. The user experience in our homemade GUI is much better, though it is
 limited by the GUI itself. In retrospect, spending more effort there instead of rewriting our software to support SUMP
 would likely have created a much better user experience but may have limited its compatibility with existing logic analyzer tools.
+
+<br>
+<br>
+<br>
 
 ### Obstacles Faced In Development
 There were a number of issues we encountered throughout the development process that hindered progress or which limit the operation of the
@@ -400,23 +414,24 @@ and does not present any real patent opportunities.
 <br>
 
 ### Further Improvements
-The biggest source of further improvements are bug fixes to our trigger logic. The inconsistent trigger failures pose a
-significant hurdle to usability. In a similar vain, improvements to our GUI to support better signal analysis such as
-being able to add markers to the collected traces and annotating traces. Other usability improvments include adding
-timeouts to trigger conditions so the logic analyzer doesn't stall when it doesn't see trigger conditions for long
-periods of time. Additionally it would improve usability for the logic analyzer to perform as a WCID device so windows
-users do not have to install drivers for the device themselves with a tool such as zadig.
+<ul>
+- **Trigger Logic Changes:** currently, flawed trigger logic is the most significant hurdle to usability. 
+  <ul>
+  - Trigger logic fails inconsistently, warranting a number of bug fixes.
+  - Currently, the trigger logic can only record data after a trigger. This is because we do not have a PIO state machine constantly reading from the traces. A potential solution is to redesign the trigger logic as follows: a PIO state machine will constantly fill a ring buffer with data from the traces, and separately, a different PIO state machine will detect triggers as described above. Once it receives a trigger, it will send an interupt to the CPU which will stop both PIOs, copy the data from the ring buffer into a separate buffer, and restart the state machines. If the ring buffer is large enough, the PIO state machine filling the ring buffer will not have overwritten the bits matching the trigger by the time the data is copied. The CPU can then iterate over the copy of the data to find the bits matching the trigger with no timing pressure. This lets the CPU find data both before and after the trigger, alleviating the limitation in which the logic analyzer could not view samples directly after a trigger condition.
+  </ul>
+- **Adding Timeouts:** putting a timeout on trigger conditions would avoid stalling from the logic analyzer when it doesn't see trigger conditions for a long time.
+- **Allow the Logic Analyzer to Perform as a WCID Device:** would make it so that Windows users do not have to install drivers (such as Zadig) for the device to use it.
+- **Improvements to GUI:** allow better signal analysis by allowing the user to add markers to the colleced traces or annotate traces.
+</ul>
 
-Larger changes to the trigger logic may also improve the capabilities of the device. Currently, the trigger logic can
-only record data after a trigger. This is because we do not have a PIO state machine constantly reading from the
-traces. A potential solution is to redesign the trigger logic as follows. A PIO state amchine will constantly fill a
-ring buffer with data from the traces and separatly a different PIO state machine will detect triggers as described
-above. Once it receives a trigger, it will send an interupt to the CPU which will stop both PIOs, copy the data from
-the ring buffer into a separate buffer, and restart the state machines. If the ring buffer is large enough, the PIO
-state machine filling the ring buffer will not have overwritten the bits matching the trigger by the time the data is
-copied. The CPU can then iterate over the copy of the data to find the bits matching the trigger with no timing
-preasure. This lets the CPU find data both before and after directly after the trigger alleviating the limitation in
-which the logic analyzer could not view sample directly after a trigger condition.
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
 # Appendix
 <hr>
