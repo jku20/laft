@@ -37,29 +37,66 @@ port it over to another to PulseView for visualization purposes.
 # High-Level Design
 <hr>
 
-Jeremy plans on making a controller adapter in the near future. To that end a logic analyzer is extremely useful for
-debugging erronious logic too and from the adapter as well as figuring out poorly documented protocols. The wires he is
-using range from 3.3v to 5v. Commercial solutions are generally fairly expensive, in the $50 to $1500 range.
+### Rationale and Project Sources
+The idea for our project was initially driven by the interests of two group members. One member of our team was interested in building
+a piece of electrical equipment on the RP2040, and another planned on making a controller adapter in the near future. A logic analyzer would meet the first goal while
+still proving to be extremely useful for debugging erronious logic to and from the controller adapter. It would also aid in figuring out poorly documented protocols, and support
+the 3.3 to 5V logic range of the signals being adapted. Since commercial solutions are generally in the $50 to $1500 range, it made logical sense to design one of our own.
 
-However, there are many open logic analyzer projects. One we drew much inspiration from was
-[ula](https://github.com/dotcypress/ula), a logic analyzer for the rp2040 partially implementing the SUMP protocol. It
-was made to be used with [PulseView](https://sigrok.org/wiki/PulseView) which we also attempted to support via similar
-means. Doing this meant we did not need to write a GUI ourselves, however it forced us to comply with the SUMP protocol,
-which during implementation we realized felt like a poor fit for the rp2350's hardware.
+There are many open-source logic analyzer projects. One we drew much inspiration from was
+[ula](https://github.com/dotcypress/ula), a logic analyzer for the RP2040 partially implementing the SUMP protocol. It
+was made to be used with [PulseView](https://sigrok.org/wiki/PulseView), which we also attempted to support via similar
+means.
 
-Especially early in the project, we found it useful to write our own GUI in addition to PulseView. It took inspiration
-from [can-explorer](https://github.com/Tbruno25/can-explorer) and connected to the logic analyzer flashed with different
-firmware. For this GUI, the pico connected as a vendor specific USB device communicating with our own protocol. We are
-not aware of other projects built on Rasberry Pis which do something similar. This gave us full control over the GUI so
-we could choose what to support and what not to as well as letting us create a protocol made specifically for the
-rp2350. The tradeoff is specifying a protocol and creating a GUI is a lot of work. We additionally found TinyUSB seemed
-to have flakey support for vendor specific USB devices (at least we couldn't figure it out) so we used the rp2350's USB
-peripheral directly. As with the above, the tradeoff was additional work for a more reliable design.
+<figure>
+  <img src="logicanalyzer-examples.png" id="logican-example" alt="High-end logic analyzers" style="max-width: 40%; height: auto; display:block; margin:auto;">
+  <figcaption>Example of high-end logic analyzers</figcaption>
+</figure>
 
+<br>
+<br>
+<br>
+
+### Logical Structure
 There are three parts to the software of this project. For our Pico 2, we created firmware to let the device be used as
 a vendor specific USB device, software to connect to the logic analyzer when using this firmware, and firmware to let
 the device connect over the serial port to the PulseView logic analyzer software using the
 [SUMP protocol](https://sump.org/projects/analyzer/protocol/).
+
+<br>
+<br>
+<br>
+
+### Hardware / Software Tradeoffs
+<ul>
+- **Hardware Tradeoffs**
+  <ul>
+  - **Max Input Frequency:** to create a truly effective logic analyzer, it was in our best interest to design for the highest input frequency possible. This not only complicated trace routing, but also our choice of level shifters to use on the board. We found that they tend to be limited to around 100 MHz or less in terms of bandwidth, so it was difficult to design for anything higher.
+  - **Designing a PCB:** we could have potentially gotten away with just feeding digital signals directly into the RP2350 pins, avoiding the need to design a PCB at all and pushing our schedule ahead by about a week or so (avoids the turnaround time on JLCPCB orders). However, designing a PCB enabled the use of SMT level shifters with wide input ranges, providing a more convenient user interface (and the ability to include Matt's dog, Buddy, in silkscreen).
+  </ul>
+
+  <figure>
+    <img src="logicanalyzer-levelshifterblockdiagram.png" id="levelshifterblockdiagram" alt="Level shifter block diagram" style="max-width: 45%; height: auto; display:block; margin:auto;">
+  </figure>
+  <figure>
+    <img src="logicanalyzer-levelshifterrange.png" id="levelshifterrange" alt="Level shifter input and output range" style="max-width: 75%; height: auto; display:block; margin:auto;">
+    <figcaption>Level shifter block diagram and voltage range ([TI Datasheet](https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf?ts=1766119193997))</figcaption>
+  </figure>
+
+  <br>
+- **Software Tradeoffs**
+  <ul>
+  - **Creating a Custom GUI:** when starting out the project, we found it useful to write our own GUI. It took inspiration from [can-explorer](https://github.com/Tbruno25/can-explorer) and connected to the logic analyzer flashed with different firmware. For this GUI, the Pico connected as a vendor-specific USB device communicating with our own protocol. We are not aware of other projects built on Raspberry Pis which do something similar. This gave us full control over the GUI, as we could choose what to support and what not to, as well as letting us create a protocol made specifically for the RP2350. The tradeoff is that specifying a protocol and creating a GUI proved to be a large time sink. We additionally found that TinyUSB seemed to have flakey support for vendor-specific USB devices, so we used the RP2350's USB peripheral directly. As with the above, the tradeoff was additional work for a more reliable design.
+  - **Using the SUMP Protocol:** implementing SUMP allowed us to use PulseView, creating compatibility with existing logic analyzer tools and eliminating the need for further work on our custom GUI. Unfortunately, complying with the SUMP protocol proved to be a time sink of its own, as we later came to realize that it felt like a poor fit for the RP2350's hardware.
+  </ul>
+</ul>
+
+<br>
+<br>
+<br>
+
+### Existing Patents, Copyrights, and Trademarks
+We are not aware of any relevant patents or trademarks. We reference copyrighted code above, which has been distributed under premissive licences which we follow. We are aware of many commercial products doing similar things to laft (e.g. DSLogic Plus, Saleae Logic 8-B, ...) but did not use or reference them in our design.
 
 <br>
 <br>
@@ -2768,6 +2805,7 @@ struct usb_endpoint_descriptor_long {
 - **Background Sites / Papers**
   <ul>
   - [SUMP Protocol](https://sump.org/projects/analyzer/protocol/)
+  - [Keysight Logic Analyzers Page](https://www.keysight.com/us/en/products/logic-analyzers.html)
   </ul>
   <br>
 </ul>

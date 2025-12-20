@@ -124,6 +124,18 @@ figure img {
     border: 0px solid #000;
 }
 
+#logican-example {
+    border: 0px solid #000;
+}
+
+#levelshifterblockdiagram {
+    border: 0px solid #000;
+}
+
+#levelshifterrange {
+    border: 0px solid #000;
+}
+
 .row {
   display: flex;
   justify-content: center;
