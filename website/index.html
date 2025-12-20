@@ -176,69 +176,68 @@ functionality for the user.
 # Program Design
 <hr>
 We will enumerate the three separate software projects composing our logic analyzer. We start with the firmware and
-software connecting as a vendor specific USB device and then follow with the firmware connecting as a virtual serial
+software connecting as a vendor-specific USB device, and then follow up with the firmware connecting as a virtual serial
 port to PulseView.
 
+<br>
+<br>
+<br>
+
 ## USB Logic Analyzer
-The firmware does not depend on any third party libraries, such as TinyUSB, when interfacing with the USB periferal,
-however, it uses siginficant code from the [dev lowlevel](https://github.com/raspberrypi/pico-examples/tree/4c3a3dc0196dd426fddd709616d0da984e027bab/usb/device/dev_lowlevel)
-example for listening and responding to transfers from the USB host. Concretely, use logic from the example to receive
-transfers from the host and then call a handler. Our responses are composed of multiple transfers so we wrote a request
+The firmware does not depend on any third party libraries, such as TinyUSB, when interfacing with the USB peripheral.
+However, it uses a good amount of code from the [dev lowlevel](https://github.com/raspberrypi/pico-examples/tree/4c3a3dc0196dd426fddd709616d0da984e027bab/usb/device/dev_lowlevel)
+example for listening and responding to transfers from the USB host. To be more specific, we use logic from the example to receive
+transfers from the host and then call a handler. Our responses are composed of multiple transfers, so we wrote a request
 queue. This is implemented as a fixed sized FIFO built around a circular buffer. When the logic analyzer needs to send
-a sequence of responses, it queues each of these respones in the request queue, starting the first response in the
+a sequence of responses, it queues each of these responses in the request queue, starting the first response in the
 request queue. Once that response is sent, the program calls a handler which checks if the queue is empty. If it isn't,
 the program will send the next request. This repeats until the queue is empty.
 
-The data sent over the USB uses a protocol we created. It is incomplete as we abandoned it to instead use SUMP as
+The data sent over USB uses a protocol we created. It is incomplete, as we abandoned it to instead use SUMP as
 described below. The description of the incomplete protocol follows:
 
-### Protocol Overview
-The laft usb application must communicate with the logic analyzer. They do it with the following protocol sent through
-USB bulk transfers. The laft application, a usb host, sends requests and the logic analyzer, a usb device, sends
-responses. There is no channel for the logic analyzer to make requests of its host. Each request is a 64 bit packet
+<br>
+<br>
+
+#### Protocol Overview
+The laft USB application must communicate with the logic analyzer. It does so with the following protocol sent through
+USB bulk transfers. The laft application, a USB host, sends requests—and the logic analyzer, a USB device, sends
+responses. There is no channel for the logic analyzer to make requests of its host. Each request is a 64-bit packet
 **starting with a 1 byte opcode**. The rest of request varies between opcodes. The format and size of a response depends
 on it's corresponding request. 
 
-### Protocol Opcodes
-#### Trace Request
-**Request**: |01|XX|SSSS|XXXXXXXX|
+<br>
 
-This request is used to dump data from every trace attached to the logic analyzer. A trace request starts with a 1 byte
-opcode, 0x01. It then follows with a 2 bytes of don't care. It then is a 2 byte little endian integer, the number of
-*bits* of data being requested *from each trace*. It then ends with 4 don't care bytes.
+#### Protocol Opcodes
+<ul>
+- **Trace Request: |01|XX|SSSS|XXXXXXXX|**
+  <ul>
+  - This request is used to dump data from every trace attached to the logic analyzer. A trace request starts with a 1 byte opcode, 0x01. It then follows with a 2 bytes of don't care. It then is a 2 byte little endian integer, the number of *bits* of data being requested *from each trace*. It then ends with 4 don't care bytes.
+  - **Response**: The response will be a series of 8 byte responses, the raw data from each trace. Bits from each and every trace are packaged into 2 bytes (traces indexed lower being first) and then this packed data is sequenced. It is sent over 64-bit responses. The final response may be incomplete, in which case the final bytes will be don't cares.
+  </ul>
 
-**Response**: The response will be a series of 8 byte responses, the raw data form each trace. Bits from each every
-trace are packaged into 2 bytes (traces indexed lower being first) and then this packed data is sequenced. It is
-sent over 64 bit responses. The final response may be incomplete, in which case the final bytes will be don't cares.
+- **Frequency Set Request: |02|XXXXXX|FFFFFFFF|**
+  <ul>
+  - This request sets the frequency the logic analyzer will expect from its traces. A frequency set request starts with a 1 byte opcode, 0x01. It is then followed by 3 bytes of don't cares and ends with a 4 byte little endian integer, the frequency to listen at.
+  - **Response**: N/A (the MCU is not expected to respond to this request).
+  </ul>
+  
+- **Rising Edge Trigger Request: |04|X|P|SSSS|XXXXXXXX|**
+  <ul>
+  - This request is used to dump data from every trace attached to the logic analyzer starting on a rising edge, for a pin specified by P. This is similar to a trace request, but instead of starting recording at some arbitrary point in time, it starts on a rising edge. The format is composed of a one byte opcode, followed by a nibble of don't cares and then a 4 bit number, the pin of the logic analyzer to look for an edge on. This is followed by a little endian two byte size, the number of bits to record *from each trace*. The request is then padded by four bytes of don't cares.
+  - **Response**: The response is a series of 8 byte responses, the raw data from each trace. Its format is the same as a Trace Request.
+  </ul>
+</ul>
 
-#### Frequency Set Request
-**Request**: |02|XXXXXX|FFFFFFFF|
+<br>
 
-This request sets the frequency the logic analyzer will expect from its traces. A frequency set request starts with a 1
-byte opcode, 0x01. It then followed with 3 bytes of don't cares and ends with a 4 byte little endian integer, the
-frequency to listen at.
-
-**Response**: The MCU is not expected to respond to this request.
-
-#### Rising Edge Trigger Request
-**Request**: |04|X|P|SSSS|XXXXXXXX|
-
-This request request is used to dump data from every trace attached to the logic analyzer starting on a rising edge for
-a pin specified by P. This is similar to a trace request, but instead of starting recording at some arbitrary point in
-time, it starts on a rising edge. The format is composed of a one byte opcode, followed by a nibble of don't cares and
-then a 4 bit number, the pin of the logic analyzer to look for an edge on. This is followed by a little endian two byte
-size, the number of bits to record *from each trace*. The request is then padded by four bytes of don't cares.
-
-**Response**: The response is a series of 8 byte responses, the raw data from each trace. It's format is the same as a
-Trace Request. Refer there for more details.
-
-### Implementation Notes
+#### Implementation Notes
 The most difficult piece of this protocol to implement was rising edge trigger requests. The frequency set request
 could be implemented by setting the PIO state machine clock divider, and the trace request was simply an easier version
 of the rising edge trigger request.
 
 To implement the rising edge trigger request, we use PIO state machines to read in values from the GPIO pins. This lets
-the logic analyzer perform reads during every cycle, thus letting it scan on the order of a 100MHz. We hard code
+the logic analyzer perform reads during every cycle, thus letting it scan on the order of 100MHz. We hard code
 recognition for rising edges.
 ```
 top:
@@ -252,8 +251,8 @@ read:
 ```
 The program allows reads every cycle, but misses one cycle of reads when looking for the rising edge. This makes it
 possible for the logic analyzer to "miss" a rising edge if that rising edge occurs the cycle the program jumps back to
-the top of the rising edge detection code. Fortunatley, this is only likely to happen if the trace the logic analyzer
-is measuring changes at a frequency approaching the logic analyzers scanning speed and the tracing being measured is
+the top of the rising edge detection code. Fortunately, this is only likely to happen if the trace the logic analyzer
+is measuring changes at a frequency approaching the logic analyzer's scanning speed, and the tracing being measured is
 aperiodic (as otherwise even if the logic analyzer misses one edge, it will probably detect the next one). This was a
 reasonable limitation for us.
 
@@ -261,33 +260,44 @@ Once the PIO state machine goes into a loop reading data, a DMA channel will get
 output buffer. When the amount of request data fills the buffer, the DMA channel ceases transfering data and the state
 machine is stopped. The data from the buffer is then queue to be sent to the host.
 
-### Logic Analyzer GUI
+<br>
+<br>
+<br> 
+
+## Logic Analyzer GUI
 We created a GUI for our logic analyzer in Python using [DearPyGui](https://github.com/hoffstadt/DearPyGui) and
 [pyusb](https://github.com/pyusb/pyusb). The GUI's main purpose is for live monitoring the logic analyzer's traces.
 The GUI starts a render thread and a polling thread. The render thread draws the current buffer to the screen every
-frame and handles user interaction. The polling thread periodically sends trace requests to the logic analyzer and
+frame and handles user interaction. The polling thread periodically sends trace requests to the logic analyzer, and it
 updates the render thread's data with the responses.
 
-< Add some image here of the ui>
+<figure>
+  <img src="logicanalyzer-oldGUI.png" alt="oldGUIsmall" style="max-width: 90%; height: auto; display:block; margin:auto;">
+  <figcaption>Our custom logic analyzer GUI</figcaption>
+</figure>
 
-The UI is simple. Due to time constraints, it doesn't support trigger requests or fancy analysis of the waveforms.
+The UI is rather simple. Due to time constraints, it doesn't support trigger requests or fancy analysis of the waveforms.
 However, the live display alone was quite helpful and we found ourselves reaching first to this prototype when
 debugging our other firmware (described below).
 
+<br>
+<br>
+<br>
+
 ## SUMP Logic Analyzer
-After writing the GUI above, we noticed there exists open logic analyzer software we could attempt to support, namely,
-PulseView, part of the larger (sigrok)[https://sigrok.org] project. PulseView supports many different logical analyzer
-protocols, but we chose to partially implement the SUMP protocol due to its simplicitly. In our discussion of SUMP we
+
+After writing the GUI above, we noticed there exists an open logic analyzer software we could attempt to support called PulseView, part of the larger (sigrok)[https://sigrok.org] project. PulseView supports many different logic analyzer
+protocols, but we chose to partially implement the SUMP protocol due to its simplicity. In our discussion of SUMP, we
 will omit details we do not implement or not relevant to our discussion. This would be a good place to link to a proper
-description of the protocol, but I am not aware on one which exists. The original spec is ill defined, and most sources
-I found simply copy the original spec word for word. 
+description of the protocol, but we have not found one that is sufficiently thorough. The original spec is ill defined, and most other sources
+online simply copy the original spec word for word. 
 
 SUMP is built around triggers. The logic analyzer software first sends the logic analyzer up to four pairs of 32 bit
-bitstrings. Each pair is composed of a trigger mask and a trigger value. SUMP has two modes, serial mode and parallel
-mode, of which we support parallel mode. In parallel mode, when the logic analyzer is armed, it tries to match each
+bitstrings. Each pair is composed of a trigger mask and a trigger value. SUMP has two modes: serial mode and parallel
+mode. Of these, we support parallel mode. In parallel mode, when the logic analyzer is armed, it tries to match each
 pair of trigger value and mask in order. To match a pair, each trace is read at the same time. The ith trace is
 compared to the ith bit in the trigger value. If they compare equal or the ith bit of the trigger mask is zero, the
-bits are said to match, else they do not match. If every trace matches every trigger value, then the next pair of
+bits are said to match; otherwise, they do not match. If every trace matches every trigger value, then the next pair of
 trigger value and trigger mask attempts to be matched against. Otherwise, the program must try and match the current
 pair again (it does not forget about previous matched pairs). Once all pairs are matched, the logic analyzer will begin
 reading the number of samples requested of it.
@@ -297,6 +307,7 @@ reading from the traces. To do this, we
 [base our implementation on ula's trigger logic](https://github.com/dotcypress/ula/blob/40756c4199c9f2ac605a39bfed2eddcc7fe0324b/src/trigger.rs),
 a Rust implementation of a SUMP based logic analyzer. In particular, we generate PIO programs at runtime based on the
 trigger masks and trigger values received from the logic analyzer software. 
+
 ```
 for (int i = 0; i < NUM_STAGES; i++) {
   int stage_offset = static_pc;
@@ -329,31 +340,40 @@ for (int i = 0; i < NUM_STAGES; i++) {
 
 prog[static_pc++] = pio_encode_in(pio_pins, 16);
 ```
-We generate one PIO program from all four value mask pairs. Each pair gets a section of the program which starts with a
+
+We generate one PIO program from all four value-mask pairs. Each pair gets a section of the program which starts with a
 read, then checks the read bits, and then either branches back to the initial read or falls through to the next section
 for the program. Concretely, each section starts with a `mov` instruction from the pins to the output status register.
 The program then differs based on the mask. For every zero in the mask, the program inserts an `out` instruction
 shifting one bit from the pin read stored in the osr into null. For every one in the mask, the program uses an `out`
 instruction to shift a one bit into the x scratch register. It then uses a `set` intruction to set the y scratch
 register to the corresponding bit of the trigger value. If these bits compare equal, the program falls through to
-the next comparison, else it jumps to to the begining of that pair's section. If there are no more comparison, the
+the next comparison, else it jumps to to the begining of that pair's section. If there are no more comparisons, the
 program falls through to the next pair's section or simply to the loop reading data from the pins to the isr.
 
 This technique has a few pitfalls. It takes a variable number of cycles to do each trigger check, and the amount of
 cycles it takes to perform a trigger check is significantly longer than the cycles it takes to read from the pins.
-The means some data is lost from between when the trigger matches the trace data and when the logic analyzer begins to
-poll the traces. We found this to be visible when polling high frequency signals. We believe this is a fundemental
-limitation of using the PIO state machines as they cannot perform large bitwise operations letting us account for the
-trigger mask. In addition, it's possible for the generated PIO programs to exceed the 32 instructions. We similarly
-do not have a solution and believe this too is a fudamental limitation of attempting to use a single PIO state machine.
-Using multiple state machines additionally doesn't work because they would have to communicate in a cycle precise level
-to maintain the speed we have. It may be possible to get close using a DMA channels to transfer bits between the state
-machines' FIFOs, but this doesn't have the same consistant, precise timing guarentee that having the program on a
-single PIO state machine gives, exasterbating the first problem.
+This means some data is lost from between when the trigger matches the trace data and when the logic analyzer begins to
+poll the traces. We found this to be visible when polling high frequency signals. 
 
-Overall, though, we found this technique functional and the only way we found or could think of to conform to SUMP.
-The evaluation above suggests it may simply be SUMP is too complex a protocol to be able to effectively support on the
-rp2350's state machines.
+We believe this is a fundamental limitation of using the PIO state machines, as they cannot perform large bitwise operations letting us account for the
+trigger mask. In addition, it's possible for the generated PIO programs to exceed the 32 instruction limit. We have yet to find a solution, and believe this too is a fundamental limitation of attempting to use a single PIO state machine.
+Using multiple state machines additionally doesn't work, because they would have to communicate with cycle-precision
+to maintain the speed we have. It may be possible to get close using DMA channels to transfer bits between the state
+machines' FIFOs, but this doesn't have the same consistent, precise timing guarantee that having the program on a
+single PIO state machine gives, exacerbating the first problem.
+
+Overall though, we found this technique to be functional enough, and the only way we could find to conform to SUMP.
+The evaluation above suggests it may simply be that SUMP is too complex of a protocol to be able to effectively support with the
+RP2350's state machines.
+
+<br>
+<br>
+<br>
+
+## Discussion of AI Use
+Though permitted to use AI on this assignment with proper documentation of prompt logs, our team did not use AI in any capacity.
+All code other than that taken from examples online were written by members of our team. 
 
 <br>
 <br>
